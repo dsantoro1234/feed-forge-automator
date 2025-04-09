@@ -54,10 +54,11 @@ export interface FeedHistory {
   id: string;
   templateId: string;
   templateName: string;
-  type: FeedType;
+  type: 'google' | 'meta' | 'trovaprezzi';
   generatedAt: string;
   status: 'success' | 'error' | 'warning';
   fileUrl?: string;
+  publicUrl?: string;  // Add this line for the permanent public URL
   errorMessage?: string;
   productCount: number;
   warningCount: number;

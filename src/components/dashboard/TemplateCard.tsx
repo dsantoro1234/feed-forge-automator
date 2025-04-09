@@ -1,27 +1,44 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FeedTemplate } from '@/types';
 import { Link } from 'react-router-dom';
-import { Calendar, Database, FileCode, Play } from 'lucide-react';
+import { Calendar, Database, FileCode, Play, Copy, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { useFeedHistory } from '@/contexts/FeedHistoryContext';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TemplateCardProps {
   template: FeedTemplate;
 }
 
 const TemplateCard: React.FC<TemplateCardProps> = ({ template }) => {
-  const { generateFeed } = useFeedHistory();
+  const { generateFeed, getPublicFeedUrl } = useFeedHistory();
+  const [isGenerating, setIsGenerating] = useState(false);
+  
+  const publicFeedUrl = getPublicFeedUrl(template.id);
   
   const handleGenerateFeed = async () => {
     try {
+      setIsGenerating(true);
       await generateFeed(template);
     } catch (error) {
       console.error('Failed to generate feed:', error);
+    } finally {
+      setIsGenerating(false);
     }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(window.location.origin + text)
+      .then(() => {
+        toast.success('URL feed pubblico copiato negli appunti');
+      })
+      .catch(() => {
+        toast.error('Impossibile copiare negli appunti');
+      });
   };
   
   const getFeedIcon = () => {
@@ -58,15 +75,44 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template }) => {
               <span>Last generated: {format(new Date(template.lastGenerated), 'PPP')}</span>
             </div>
           )}
+          {publicFeedUrl && (
+            <div className="mt-2 p-2 bg-muted rounded-md flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm truncate">
+                <ExternalLink className="h-4 w-4 text-primary" />
+                <span className="truncate" title={window.location.origin + publicFeedUrl}>
+                  {window.location.origin + publicFeedUrl}
+                </span>
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => copyToClipboard(publicFeedUrl)}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy public feed URL</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
         </div>
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button variant="outline" asChild>
           <Link to={`/templates/${template.id}`}>Edit Template</Link>
         </Button>
-        <Button onClick={handleGenerateFeed} disabled={!template.isActive}>
+        <Button 
+          onClick={handleGenerateFeed} 
+          disabled={!template.isActive || isGenerating}
+        >
           <Play className="h-4 w-4 mr-2" />
-          Generate Feed
+          {isGenerating ? 'Generating...' : 'Generate Feed'}
         </Button>
       </CardFooter>
     </Card>

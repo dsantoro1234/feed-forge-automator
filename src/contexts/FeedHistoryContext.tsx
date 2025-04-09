@@ -12,19 +12,40 @@ interface FeedHistoryContextType {
   generateFeed: (template: FeedTemplate, customProducts?: Product[]) => Promise<void>;
   downloadFeed: (historyId: string) => void;
   deleteFeedHistory: (historyId: string) => void;
+  getPublicFeedUrl: (templateId: string) => string | null;
 }
 
 const FeedHistoryContext = createContext<FeedHistoryContextType | undefined>(undefined);
 
+// Generate a persistent "public" URL for a template
+const generatePublicFeedUrl = (templateId: string, type: string): string => {
+  // In a real app this would be a permanent URL on your server or CDN
+  // For this demo we'll use a pseudo URL that represents this concept
+  const extension = type === 'google' ? 'xml' : 'csv';
+  return `/feeds/${templateId}.${extension}`;
+};
+
 export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [history, setHistory] = useState<FeedHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // Map to store the latest public URL for each template
+  const [publicFeedUrls, setPublicFeedUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     // In a real app, you would load the history from an API or localStorage
     // For the demo, we'll use the mock data and simulate a loading delay
     const timer = setTimeout(() => {
       setHistory(mockFeedHistory);
+      
+      // Initialize publicFeedUrls from history
+      const initialUrls: Record<string, string> = {};
+      mockFeedHistory.forEach(item => {
+        if (item.status === 'success' && item.publicUrl) {
+          initialUrls[item.templateId] = item.publicUrl;
+        }
+      });
+      setPublicFeedUrls(initialUrls);
+      
       setIsLoading(false);
     }, 1000);
 
@@ -47,9 +68,18 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
       // Generate appropriate feed based on template type
       content = generateFeedByType(productsToUse, template);
       
-      // Crea un oggetto URL per il download
+      // Create a URL object for download
       const contentType = template.type === 'google' ? 'application/xml' : 'text/csv';
       fileUrl = URL.createObjectURL(new Blob([content], { type: contentType }));
+      
+      // Generate a permanent public URL for this feed
+      const publicUrl = generatePublicFeedUrl(template.id, template.type);
+      
+      // Update the publicFeedUrls map
+      setPublicFeedUrls(prev => ({
+        ...prev,
+        [template.id]: publicUrl
+      }));
       
       const newHistory: FeedHistory = {
         id: uuidv4(),
@@ -59,6 +89,7 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         generatedAt: new Date().toISOString(),
         status: 'success',
         fileUrl,
+        publicUrl, // Add the public URL
         productCount: productsToUse.length,
         warningCount: 0
       };
@@ -120,6 +151,11 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     toast.success('Voce cronologia feed eliminata');
   };
 
+  // Function to get the public URL for a template
+  const getPublicFeedUrl = (templateId: string): string | null => {
+    return publicFeedUrls[templateId] || null;
+  };
+
   return (
     <FeedHistoryContext.Provider
       value={{
@@ -127,7 +163,8 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         isLoading,
         generateFeed,
         downloadFeed,
-        deleteFeedHistory
+        deleteFeedHistory,
+        getPublicFeedUrl
       }}
     >
       {children}

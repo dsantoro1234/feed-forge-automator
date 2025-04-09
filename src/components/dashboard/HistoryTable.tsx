@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { FeedHistory } from '@/types';
 import { 
   Table, 
@@ -15,11 +15,14 @@ import {
   Trash2, 
   CheckCircle, 
   AlertCircle, 
-  AlertTriangle 
+  AlertTriangle,
+  Link as LinkIcon,
+  Copy
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useFeedHistory } from '@/contexts/FeedHistoryContext';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 interface HistoryTableProps {
   history: FeedHistory[];
@@ -37,6 +40,16 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ history, limit }) => {
   
   const handleDelete = (id: string) => {
     deleteFeedHistory(id);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(window.location.origin + text)
+      .then(() => {
+        toast.success('URL feed pubblico copiato negli appunti');
+      })
+      .catch(() => {
+        toast.error('Impossibile copiare negli appunti');
+      });
   };
   
   const getStatusIcon = (status: FeedHistory['status']) => {
@@ -107,9 +120,21 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ history, limit }) => {
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     {item.status === 'success' && (
-                      <Button size="icon" variant="ghost" onClick={() => handleDownload(item.id)}>
-                        <Download className="h-4 w-4" />
-                      </Button>
+                      <>
+                        <Button size="icon" variant="ghost" onClick={() => handleDownload(item.id)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        {item.publicUrl && (
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            title="Copy public feed URL"
+                            onClick={() => copyToClipboard(item.publicUrl!)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </>
                     )}
                     <Button size="icon" variant="ghost" onClick={() => handleDelete(item.id)}>
                       <Trash2 className="h-4 w-4" />
