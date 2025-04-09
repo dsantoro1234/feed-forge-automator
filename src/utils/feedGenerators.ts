@@ -32,7 +32,11 @@ export const generateGoogleFeed = (products: Product[], template: FeedTemplate):
 
     xmlOutput += '  <item>\n';
     
-    // Aggiungi i campi mappati
+    // Prepare a map to collect all field values
+    const mappedFields: Record<string, any> = {};
+    const additionalImageLinks: string[] = [];
+    
+    // First pass: collect all mapped fields and handle special cases
     for (const mapping of template.mappings) {
       const sourceValue = product[mapping.sourceField];
       const value = sourceValue !== undefined && sourceValue !== null 
@@ -40,12 +44,30 @@ export const generateGoogleFeed = (products: Product[], template: FeedTemplate):
         : mapping.defaultValue;
         
       if (value !== undefined && value !== null && value !== '') {
-        xmlOutput += `    <g:${mapping.targetField}><![CDATA[${value}]]></g:${mapping.targetField}>\n`;
+        // Special handling for additional image links (can have multiple)
+        if (mapping.targetField === 'additional_image_link') {
+          additionalImageLinks.push(value);
+        } else {
+          mappedFields[mapping.targetField] = value;
+        }
+      }
+    }
+    
+    // Second pass: write all fields to XML
+    for (const [field, value] of Object.entries(mappedFields)) {
+      xmlOutput += `    <g:${field}><![CDATA[${value}]]></g:${field}>\n`;
+    }
+    
+    // Handle additional image links separately (can have multiple)
+    if (additionalImageLinks.length > 0) {
+      // Google allows up to 10 additional images
+      for (let i = 0; i < Math.min(additionalImageLinks.length, 10); i++) {
+        xmlOutput += `    <g:additional_image_link><![CDATA[${additionalImageLinks[i]}]]></g:additional_image_link>\n`;
       }
     }
     
     // Assicurati che l'ID prodotto sia sempre presente (richiesto da Google)
-    const hasId = template.mappings.some(m => m.targetField === 'id');
+    const hasId = mappedFields['id'] !== undefined;
     if (!hasId && product.id) {
       xmlOutput += `    <g:id><![CDATA[${product.id}]]></g:id>\n`;
     }

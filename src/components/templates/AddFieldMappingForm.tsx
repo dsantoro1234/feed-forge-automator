@@ -16,6 +16,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useTemplates } from '@/contexts/TemplateContext';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { FeedTemplate } from '@/types';
 
 const formSchema = z.object({
   sourceField: z.string().min(1, { message: 'Source field is required' }),
@@ -30,7 +39,8 @@ interface AddFieldMappingFormProps {
 }
 
 const AddFieldMappingForm: React.FC<AddFieldMappingFormProps> = ({ templateId, onComplete }) => {
-  const { addFieldMapping } = useTemplates();
+  const { addFieldMapping, getTemplateById, getGoogleShoppingFields } = useTemplates();
+  const template = getTemplateById(templateId);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -42,14 +52,55 @@ const AddFieldMappingForm: React.FC<AddFieldMappingFormProps> = ({ templateId, o
     },
   });
 
+  // Get predefined fields based on template type
+  const getPredefinedFields = () => {
+    if (!template) return [];
+    
+    if (template.type === 'google') {
+      return getGoogleShoppingFields();
+    }
+    
+    // Add support for other feed types here
+    return [];
+  };
+  
+  const predefinedFields = getPredefinedFields();
+  
+  // Get field info for the selected target field
+  const getFieldInfo = (fieldName: string) => {
+    if (!template) return null;
+    
+    if (template.type === 'google') {
+      return predefinedFields.find(f => f.field === fieldName);
+    }
+    
+    return null;
+  };
+  
+  const selectedField = form.watch('targetField');
+  const fieldInfo = getFieldInfo(selectedField);
+  
+  // Update required status when selecting a predefined field
+  React.useEffect(() => {
+    if (fieldInfo) {
+      form.setValue('isRequired', fieldInfo.required);
+    }
+  }, [selectedField, fieldInfo, form]);
+
   function onSubmit(values: z.infer<typeof formSchema>) {
+    // Get extra field information if available
+    const fieldInfo = getFieldInfo(values.targetField);
+    
     addFieldMapping(templateId, {
       sourceField: values.sourceField,
       targetField: values.targetField,
       isRequired: values.isRequired,
       defaultValue: values.defaultValue || '',
-      transformations: []
+      transformations: [],
+      description: fieldInfo?.description,
+      example: fieldInfo?.example
     });
+    
     form.reset();
     onComplete();
   }
@@ -82,10 +133,36 @@ const AddFieldMappingForm: React.FC<AddFieldMappingFormProps> = ({ templateId, o
               <FormItem>
                 <FormLabel>Target Field</FormLabel>
                 <FormControl>
-                  <Input placeholder="id" {...field} />
+                  {template?.type === 'google' && predefinedFields.length > 0 ? (
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a field" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {predefinedFields.map(f => (
+                          <SelectItem key={f.field} value={f.field}>
+                            {f.field} {f.required && <Badge variant="outline" className="ml-2 bg-red-50 text-red-700 border-red-200">Required</Badge>}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input placeholder="id" {...field} />
+                  )}
                 </FormControl>
                 <FormDescription>
-                  The field name in the feed output
+                  {fieldInfo ? (
+                    <span>
+                      {fieldInfo.description}
+                      <br />
+                      <span className="text-xs text-muted-foreground">Example: {fieldInfo.example}</span>
+                    </span>
+                  ) : (
+                    "The field name in the feed output"
+                  )}
                 </FormDescription>
                 <FormMessage />
               </FormItem>

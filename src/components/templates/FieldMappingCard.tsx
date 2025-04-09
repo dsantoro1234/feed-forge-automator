@@ -6,10 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Trash2, ArrowRight, Plus, Edit } from 'lucide-react';
+import { Trash2, ArrowRight, Plus, Edit, Info } from 'lucide-react';
 import { useTemplates } from '@/contexts/TemplateContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface FieldMappingCardProps {
   templateId: string;
@@ -91,6 +97,8 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
                   value={targetField}
                   onChange={(e) => setTargetField(e.target.value)}
                   placeholder="id"
+                  readOnly={true} // Don't allow changing the target field
+                  className="bg-gray-50"
                 />
               </div>
             </div>
@@ -128,11 +136,28 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="font-medium">{mapping.sourceField}</span>
+                <span className="font-medium">{mapping.sourceField || '(not mapped)'}</span>
                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium">{mapping.targetField}</span>
                 {mapping.isRequired && (
-                  <Badge variant="secondary" className="ml-2">Required</Badge>
+                  <Badge variant="secondary" className="ml-2 bg-red-50 text-red-700 border-red-200">Required</Badge>
+                )}
+                {mapping.description && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>{mapping.description}</p>
+                        {mapping.example && (
+                          <p className="text-xs text-muted-foreground mt-1">Example: {mapping.example}</p>
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </div>
               <div className="flex gap-2">

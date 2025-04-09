@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TemplateForm from '@/components/templates/TemplateForm';
 import FieldMappingCard from '@/components/templates/FieldMappingCard';
 import AddFieldMappingForm from '@/components/templates/AddFieldMappingForm';
-import { ArrowLeft, Play, Plus, Trash2, FileText, Download } from 'lucide-react';
+import { ArrowLeft, Play, Plus, Trash2, FileText, Download, List } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { generateFeedByType } from '@/utils/feedGenerators';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 const TemplateDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { templates, getTemplateById, deleteTemplate } = useTemplates();
+  const { templates, getTemplateById, deleteTemplate, addPredefinedGoogleFields } = useTemplates();
   const { generateFeed } = useFeedHistory();
   const { products } = useProducts();
   
@@ -117,6 +117,12 @@ const TemplateDetail = () => {
     URL.revokeObjectURL(url);
   };
   
+  const handleAddPredefinedFields = () => {
+    if (template.type === 'google') {
+      addPredefinedGoogleFields(template.id);
+    }
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -156,10 +162,18 @@ const TemplateDetail = () => {
         <TabsContent value="mappings" className="space-y-4 mt-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Mappatura Campi</h2>
-            <Button onClick={() => setIsAddingMapping(true)} disabled={isAddingMapping}>
-              <Plus className="h-4 w-4 mr-2" />
-              Aggiungi Mappatura
-            </Button>
+            <div className="flex gap-2">
+              {template.type === 'google' && (
+                <Button variant="outline" onClick={handleAddPredefinedFields}>
+                  <List className="h-4 w-4 mr-2" />
+                  Aggiungi Tutti i Campi Google
+                </Button>
+              )}
+              <Button onClick={() => setIsAddingMapping(true)} disabled={isAddingMapping}>
+                <Plus className="h-4 w-4 mr-2" />
+                Aggiungi Mappatura
+              </Button>
+            </div>
           </div>
           
           {template.mappings.length === 0 && !isAddingMapping ? (
@@ -168,9 +182,16 @@ const TemplateDetail = () => {
                 <div className="text-center">
                   <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">Nessuna mappatura di campo definita</p>
-                  <Button onClick={() => setIsAddingMapping(true)}>
-                    Aggiungi La Tua Prima Mappatura
-                  </Button>
+                  <div className="flex gap-2 justify-center">
+                    {template.type === 'google' && (
+                      <Button onClick={handleAddPredefinedFields}>
+                        Aggiungi Tutti i Campi Google
+                      </Button>
+                    )}
+                    <Button onClick={() => setIsAddingMapping(true)}>
+                      Aggiungi Campo Manualmente
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -190,13 +211,46 @@ const TemplateDetail = () => {
                 </Card>
               )}
               
-              {template.mappings.map(mapping => (
-                <FieldMappingCard 
-                  key={mapping.id} 
-                  templateId={template.id} 
-                  mapping={mapping} 
-                />
-              ))}
+              {/* Required fields first */}
+              {template.mappings.some(m => m.isRequired) && (
+                <div className="mb-2">
+                  <h3 className="text-md font-semibold mb-2 text-red-600">
+                    Campi Obbligatori
+                    <Badge variant="outline" className="ml-2 bg-red-50 text-red-700 border-red-200">
+                      Required
+                    </Badge>
+                  </h3>
+                  {template.mappings
+                    .filter(mapping => mapping.isRequired)
+                    .map(mapping => (
+                      <FieldMappingCard 
+                        key={mapping.id} 
+                        templateId={template.id} 
+                        mapping={mapping} 
+                      />
+                    ))
+                  }
+                </div>
+              )}
+              
+              {/* Optional fields */}
+              {template.mappings.some(m => !m.isRequired) && (
+                <div>
+                  <h3 className="text-md font-semibold mb-2">
+                    Campi Opzionali
+                  </h3>
+                  {template.mappings
+                    .filter(mapping => !mapping.isRequired)
+                    .map(mapping => (
+                      <FieldMappingCard 
+                        key={mapping.id} 
+                        templateId={template.id} 
+                        mapping={mapping} 
+                      />
+                    ))
+                  }
+                </div>
+              )}
             </>
           )}
         </TabsContent>
