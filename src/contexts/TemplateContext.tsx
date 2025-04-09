@@ -16,6 +16,7 @@ interface TemplateContextType {
   deleteFieldMapping: (templateId: string, mappingId: string) => void;
   getGoogleShoppingFields: () => { field: string; required: boolean; description: string; example: string }[];
   addPredefinedGoogleFields: (templateId: string) => void;
+  addSelectedGoogleFields: (templateId: string, fieldNames: string[]) => void;
 }
 
 const TemplateContext = createContext<TemplateContextType | undefined>(undefined);
@@ -110,7 +111,6 @@ export const TemplateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const getGoogleShoppingFields = () => {
     return [
-      // Required fields
       { field: 'id', required: true, description: 'A unique identifier for the product', example: 'SKU123' },
       { field: 'title', required: true, description: 'Product title', example: 'Google Pixel 6 128GB Black' },
       { field: 'description', required: true, description: 'Product description', example: 'High-performance smartphone with exceptional camera capabilities.' },
@@ -119,13 +119,11 @@ export const TemplateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       { field: 'availability', required: true, description: 'Product\'s availability status', example: 'in stock' },
       { field: 'price', required: true, description: 'Product\'s price with currency code', example: '699.00 USD' },
       
-      // Strongly recommended fields (treated as required for most products)
       { field: 'brand', required: true, description: 'Product\'s brand name', example: 'Google' },
       { field: 'gtin', required: false, description: 'Global Trade Item Number (UPC, EAN, JAN, ISBN)', example: '885909950805' },
       { field: 'mpn', required: false, description: 'Manufacturer Part Number', example: 'GA01878-US' },
       { field: 'condition', required: false, description: 'Product\'s condition', example: 'new' },
 
-      // Optional fields
       { field: 'additional_image_link', required: false, description: 'Additional product images (up to 10)', example: 'https://example.com/images/pixel-6-alt1.jpg' },
       { field: 'age_group', required: false, description: 'Target age group', example: 'adult' },
       { field: 'color', required: false, description: 'Product\'s color', example: 'Black' },
@@ -188,7 +186,7 @@ export const TemplateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const template = getTemplateById(templateId);
     
     if (!template) {
-      toast.error('Template not found');
+      toast.error('Template non trovato');
       return;
     }
     
@@ -196,7 +194,7 @@ export const TemplateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const fieldsToAdd = googleFields.filter(f => !existingFields.has(f.field));
     
     if (fieldsToAdd.length === 0) {
-      toast.info('All Google Shopping fields already added');
+      toast.info('Tutti i campi Google Shopping già aggiunti');
       return;
     }
     
@@ -227,7 +225,54 @@ export const TemplateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       })
     );
     
-    toast.success(`Added ${fieldsToAdd.length} Google Shopping fields`);
+    toast.success(`Aggiunti ${fieldsToAdd.length} campi Google Shopping`);
+  };
+
+  const addSelectedGoogleFields = (templateId: string, fieldNames: string[]) => {
+    const googleFields = getGoogleShoppingFields();
+    const template = getTemplateById(templateId);
+    
+    if (!template) {
+      toast.error('Template non trovato');
+      return;
+    }
+    
+    const existingFields = new Set(template.mappings.map(m => m.targetField));
+    const fieldsToAdd = googleFields.filter(f => fieldNames.includes(f.field) && !existingFields.has(f.field));
+    
+    if (fieldsToAdd.length === 0) {
+      toast.info('Nessun nuovo campo da aggiungere');
+      return;
+    }
+    
+    setTemplates(prev => 
+      prev.map(t => {
+        if (t.id === templateId) {
+          const newMappings = [...t.mappings];
+          
+          for (const field of fieldsToAdd) {
+            newMappings.push({
+              id: uuidv4(),
+              sourceField: '', // Empty by default, user needs to map
+              targetField: field.field,
+              isRequired: field.required,
+              defaultValue: '',
+              transformations: [],
+              description: field.description,
+              example: field.example
+            });
+          }
+          
+          return {
+            ...t,
+            mappings: newMappings
+          };
+        }
+        return t;
+      })
+    );
+    
+    toast.success(`Aggiunti ${fieldsToAdd.length} campi Google Shopping`);
   };
 
   return (
@@ -243,7 +288,8 @@ export const TemplateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateFieldMapping,
         deleteFieldMapping,
         getGoogleShoppingFields,
-        addPredefinedGoogleFields
+        addPredefinedGoogleFields,
+        addSelectedGoogleFields
       }}
     >
       {children}

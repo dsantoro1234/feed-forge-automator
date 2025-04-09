@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useTemplates } from '@/contexts/TemplateContext';
+import { useProducts } from '@/contexts/ProductContext';
 import { 
   Select, 
   SelectContent, 
@@ -40,7 +41,9 @@ interface AddFieldMappingFormProps {
 
 const AddFieldMappingForm: React.FC<AddFieldMappingFormProps> = ({ templateId, onComplete }) => {
   const { addFieldMapping, getTemplateById, getGoogleShoppingFields } = useTemplates();
+  const { getProductFields } = useProducts();
   const template = getTemplateById(templateId);
+  const availableSourceFields = getProductFields();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -114,12 +117,26 @@ const AddFieldMappingForm: React.FC<AddFieldMappingFormProps> = ({ templateId, o
             name="sourceField"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Source Field</FormLabel>
+                <FormLabel>Campo Sorgente</FormLabel>
                 <FormControl>
-                  <Input placeholder="product_id" {...field} />
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleziona un campo dal database" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSourceFields.map(f => (
+                        <SelectItem key={f} value={f}>
+                          {f}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </FormControl>
                 <FormDescription>
-                  The field name in your data source
+                  Il nome del campo nei tuoi dati
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -131,7 +148,7 @@ const AddFieldMappingForm: React.FC<AddFieldMappingFormProps> = ({ templateId, o
             name="targetField"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Target Field</FormLabel>
+                <FormLabel>Campo Destinazione</FormLabel>
                 <FormControl>
                   {template?.type === 'google' && predefinedFields.length > 0 ? (
                     <Select 
@@ -139,7 +156,7 @@ const AddFieldMappingForm: React.FC<AddFieldMappingFormProps> = ({ templateId, o
                       defaultValue={field.value}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a field" />
+                        <SelectValue placeholder="Seleziona un campo" />
                       </SelectTrigger>
                       <SelectContent>
                         {predefinedFields.map(f => (
@@ -158,10 +175,10 @@ const AddFieldMappingForm: React.FC<AddFieldMappingFormProps> = ({ templateId, o
                     <span>
                       {fieldInfo.description}
                       <br />
-                      <span className="text-xs text-muted-foreground">Example: {fieldInfo.example}</span>
+                      <span className="text-xs text-muted-foreground">Esempio: {fieldInfo.example}</span>
                     </span>
                   ) : (
-                    "The field name in the feed output"
+                    "Nome del campo nel feed"
                   )}
                 </FormDescription>
                 <FormMessage />
@@ -176,12 +193,12 @@ const AddFieldMappingForm: React.FC<AddFieldMappingFormProps> = ({ templateId, o
             name="defaultValue"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Default Value</FormLabel>
+                <FormLabel>Valore Predefinito</FormLabel>
                 <FormControl>
-                  <Input placeholder="Default value if source is empty" {...field} />
+                  <Input placeholder="Valore predefinito se la sorgente è vuota" {...field} />
                 </FormControl>
                 <FormDescription>
-                  Optional fallback if source field is empty
+                  Fallback opzionale se il campo sorgente è vuoto
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -194,9 +211,9 @@ const AddFieldMappingForm: React.FC<AddFieldMappingFormProps> = ({ templateId, o
             render={({ field }) => (
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                 <div className="space-y-0.5">
-                  <FormLabel>Required Field</FormLabel>
+                  <FormLabel>Campo Obbligatorio</FormLabel>
                   <FormDescription>
-                    Mark if this field is required in the feed
+                    Indicare se questo campo è richiesto nel feed
                   </FormDescription>
                 </div>
                 <FormControl>
@@ -213,9 +230,9 @@ const AddFieldMappingForm: React.FC<AddFieldMappingFormProps> = ({ templateId, o
         
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onComplete}>
-            Cancel
+            Annulla
           </Button>
-          <Button type="submit">Add Field Mapping</Button>
+          <Button type="submit">Aggiungi Mappatura Campo</Button>
         </div>
       </form>
     </Form>

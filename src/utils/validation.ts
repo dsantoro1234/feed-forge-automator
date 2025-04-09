@@ -80,7 +80,7 @@ export const validateGoogleFeed = (product: Product, mappings: FieldMapping[]): 
   }
   
   // Validate price format (currency code required)
-  if (mappedFields['price'] && !mappedFields['price'].match(/^\d+(\.\d+)?\s[A-Z]{3}$/)) {
+  if (mappedFields['price'] && typeof mappedFields['price'] === 'string' && mappedFields['price'].match && !mappedFields['price'].match(/^\d+(\.\d+)?\s[A-Z]{3}$/)) {
     baseResult.warnings.push({
       field: 'price',
       message: 'Price should be in format "100.00 USD" with a space and currency code',

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTemplates } from '@/contexts/TemplateContext';
@@ -10,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TemplateForm from '@/components/templates/TemplateForm';
 import FieldMappingCard from '@/components/templates/FieldMappingCard';
 import AddFieldMappingForm from '@/components/templates/AddFieldMappingForm';
+import GoogleFieldSelector from '@/components/templates/GoogleFieldSelector';
 import { ArrowLeft, Play, Plus, Trash2, FileText, Download, List } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { generateFeedByType } from '@/utils/feedGenerators';
@@ -29,6 +29,7 @@ const TemplateDetail = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState('');
+  const [isFieldSelectorOpen, setIsFieldSelectorOpen] = useState(false);
   
   const template = id ? getTemplateById(id) : undefined;
   
@@ -84,8 +85,7 @@ const TemplateDetail = () => {
     }
     
     try {
-      // Genera l'anteprima del feed con i prodotti disponibili
-      const sampleProducts = products.slice(0, 5); // Limita a 5 prodotti per l'anteprima
+      const sampleProducts = products.slice(0, 5);
       const feedContent = generateFeedByType(sampleProducts, template);
       setPreviewContent(feedContent);
       setPreviewOpen(true);
@@ -164,9 +164,9 @@ const TemplateDetail = () => {
             <h2 className="text-xl font-semibold">Mappatura Campi</h2>
             <div className="flex gap-2">
               {template.type === 'google' && (
-                <Button variant="outline" onClick={handleAddPredefinedFields}>
+                <Button variant="outline" onClick={() => setIsFieldSelectorOpen(true)}>
                   <List className="h-4 w-4 mr-2" />
-                  Aggiungi Tutti i Campi Google
+                  Seleziona Campi Google
                 </Button>
               )}
               <Button onClick={() => setIsAddingMapping(true)} disabled={isAddingMapping}>
@@ -184,8 +184,8 @@ const TemplateDetail = () => {
                   <p className="text-muted-foreground mb-4">Nessuna mappatura di campo definita</p>
                   <div className="flex gap-2 justify-center">
                     {template.type === 'google' && (
-                      <Button onClick={handleAddPredefinedFields}>
-                        Aggiungi Tutti i Campi Google
+                      <Button onClick={() => setIsFieldSelectorOpen(true)}>
+                        Seleziona Campi Google
                       </Button>
                     )}
                     <Button onClick={() => setIsAddingMapping(true)}>
@@ -211,7 +211,6 @@ const TemplateDetail = () => {
                 </Card>
               )}
               
-              {/* Required fields first */}
               {template.mappings.some(m => m.isRequired) && (
                 <div className="mb-2">
                   <h3 className="text-md font-semibold mb-2 text-red-600">
@@ -233,7 +232,6 @@ const TemplateDetail = () => {
                 </div>
               )}
               
-              {/* Optional fields */}
               {template.mappings.some(m => !m.isRequired) && (
                 <div>
                   <h3 className="text-md font-semibold mb-2">
@@ -343,6 +341,14 @@ const TemplateDetail = () => {
           )}
         </DialogContent>
       </Dialog>
+      
+      {template && template.type === 'google' && (
+        <GoogleFieldSelector
+          templateId={template.id}
+          isOpen={isFieldSelectorOpen}
+          onClose={() => setIsFieldSelectorOpen(false)}
+        />
+      )}
     </div>
   );
 };
