@@ -177,7 +177,7 @@ export const TemplateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       { field: 'availability_date', required: false, description: 'Date a preordered or backordered product becomes available', example: '2023-12-25T13:00:00-08:00' },
       { field: 'expiration_date', required: false, description: 'Date content expires', example: '2024-12-31T23:59:59-08:00' },
       { field: 'unit_pricing_measure', required: false, description: 'The measure and dimension of the product', example: '750ml' },
-      { field: 'unit_pricing_base_measure', required: false, description: 'The product's base measure for pricing', example: '100ml' },
+      { field: 'unit_pricing_base_measure', required: false, description: 'The product\'s base measure for pricing', example: '100ml' },
       { field: 'cost_of_goods_sold', required: false, description: 'Cost of the product with currency', example: '400.00 USD' },
       { field: 'sell_on_google_quantity', required: false, description: 'The number of this product you\'d like to sell through Buy on Google', example: '10' },
     ];
