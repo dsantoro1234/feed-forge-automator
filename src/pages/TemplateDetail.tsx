@@ -3,15 +3,16 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTemplates } from '@/contexts/TemplateContext';
 import { useFeedHistory } from '@/contexts/FeedHistoryContext';
+import { useProducts } from '@/contexts/ProductContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TemplateForm from '@/components/templates/TemplateForm';
 import FieldMappingCard from '@/components/templates/FieldMappingCard';
 import AddFieldMappingForm from '@/components/templates/AddFieldMappingForm';
-import { ArrowLeft, Play, Plus, Trash2, FileText } from 'lucide-react';
+import { ArrowLeft, Play, Plus, Trash2, FileText, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { mockSampleProducts } from '@/data/mockData';
+import { generateFeedByType } from '@/utils/feedGenerators';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -21,11 +22,13 @@ const TemplateDetail = () => {
   const navigate = useNavigate();
   const { templates, getTemplateById, deleteTemplate } = useTemplates();
   const { generateFeed } = useFeedHistory();
+  const { products } = useProducts();
   
   const [isAddingMapping, setIsAddingMapping] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewContent, setPreviewContent] = useState('');
   
   const template = id ? getTemplateById(id) : undefined;
   
@@ -33,10 +36,10 @@ const TemplateDetail = () => {
     return (
       <div className="h-64 flex items-center justify-center">
         <div className="text-center space-y-4">
-          <p className="text-muted-foreground">Template not found</p>
-          <Button asChild>
+          <p className="text-muted-foreground">Template non trovato</p>
+          <Button variant="outline" onClick={() => navigate('/templates')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            <span onClick={() => navigate('/templates')}>Back to Templates</span>
+            <span>Torna ai Templates</span>
           </Button>
         </div>
       </div>
@@ -46,11 +49,11 @@ const TemplateDetail = () => {
   const handleGenerateFeed = async () => {
     setIsGenerating(true);
     try {
-      await generateFeed(template);
-      toast.success('Feed generated successfully');
+      await generateFeed(template, products);
+      toast.success('Feed generato con successo');
     } catch (error) {
-      console.error('Failed to generate feed:', error);
-      toast.error('Failed to generate feed');
+      console.error('Impossibile generare il feed:', error);
+      toast.error('Impossibile generare il feed');
     } finally {
       setIsGenerating(false);
     }
@@ -73,6 +76,47 @@ const TemplateDetail = () => {
     }
   };
   
+  const handlePreviewFeed = () => {
+    if (template.mappings.length === 0) {
+      setPreviewContent('');
+      setPreviewOpen(true);
+      return;
+    }
+    
+    try {
+      // Genera l'anteprima del feed con i prodotti disponibili
+      const sampleProducts = products.slice(0, 5); // Limita a 5 prodotti per l'anteprima
+      const feedContent = generateFeedByType(sampleProducts, template);
+      setPreviewContent(feedContent);
+      setPreviewOpen(true);
+    } catch (error) {
+      console.error('Errore nella generazione dell\'anteprima:', error);
+      toast.error('Impossibile generare l\'anteprima del feed');
+    }
+  };
+  
+  const handleDownloadPreview = () => {
+    if (!previewContent) {
+      toast.error('Nessun contenuto da scaricare');
+      return;
+    }
+    
+    const blob = new Blob(
+      [previewContent], 
+      { type: template.type === 'google' ? 'application/xml' : 'text/csv' }
+    );
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const extension = template.type === 'google' ? '.xml' : '.csv';
+    
+    link.href = url;
+    link.download = `${template.name.toLowerCase().replace(/\s+/g, '-')}-preview${extension}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -85,36 +129,36 @@ const TemplateDetail = () => {
             <div className="flex items-center gap-2 mt-1">
               {getTypeBadge()}
               {template.isActive ? (
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Active</Badge>
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Attivo</Badge>
               ) : (
-                <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Inactive</Badge>
+                <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Inattivo</Badge>
               )}
             </div>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setPreviewOpen(true)}>
+          <Button variant="outline" onClick={handlePreviewFeed}>
             <FileText className="h-4 w-4 mr-2" />
-            Preview
+            Anteprima
           </Button>
           <Button onClick={handleGenerateFeed} disabled={isGenerating || !template.isActive}>
             <Play className="h-4 w-4 mr-2" />
-            Generate Feed
+            Genera Feed
           </Button>
         </div>
       </div>
       
       <Tabs defaultValue="mappings">
         <TabsList>
-          <TabsTrigger value="mappings">Field Mappings</TabsTrigger>
-          <TabsTrigger value="settings">Template Settings</TabsTrigger>
+          <TabsTrigger value="mappings">Mappatura Campi</TabsTrigger>
+          <TabsTrigger value="settings">Impostazioni Template</TabsTrigger>
         </TabsList>
         <TabsContent value="mappings" className="space-y-4 mt-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Field Mappings</h2>
+            <h2 className="text-xl font-semibold">Mappatura Campi</h2>
             <Button onClick={() => setIsAddingMapping(true)} disabled={isAddingMapping}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Field Mapping
+              Aggiungi Mappatura
             </Button>
           </div>
           
@@ -123,9 +167,9 @@ const TemplateDetail = () => {
               <CardContent className="py-8">
                 <div className="text-center">
                   <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground mb-4">No field mappings defined yet</p>
+                  <p className="text-muted-foreground mb-4">Nessuna mappatura di campo definita</p>
                   <Button onClick={() => setIsAddingMapping(true)}>
-                    Add Your First Field Mapping
+                    Aggiungi La Tua Prima Mappatura
                   </Button>
                 </div>
               </CardContent>
@@ -135,7 +179,7 @@ const TemplateDetail = () => {
               {isAddingMapping && (
                 <Card className="mb-4">
                   <CardHeader>
-                    <CardTitle>Add New Field Mapping</CardTitle>
+                    <CardTitle>Aggiungi Nuova Mappatura</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <AddFieldMappingForm 
@@ -159,22 +203,22 @@ const TemplateDetail = () => {
         <TabsContent value="settings" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Template Settings</CardTitle>
+              <CardTitle>Impostazioni Template</CardTitle>
             </CardHeader>
             <CardContent>
               <TemplateForm existingTemplate={template} />
               
               <div className="mt-8 pt-8 border-t">
-                <h3 className="text-lg font-semibold text-destructive mb-4">Danger Zone</h3>
+                <h3 className="text-lg font-semibold text-destructive mb-4">Zona Pericolosa</h3>
                 <p className="text-muted-foreground mb-4">
-                  Permanently delete this template and all its mappings. This action cannot be undone.
+                  Elimina permanentemente questo template e tutte le sue mappature. Questa azione non può essere annullata.
                 </p>
                 <Button 
                   variant="destructive" 
                   onClick={() => setIsDeleteDialogOpen(true)}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Template
+                  Elimina Template
                 </Button>
               </div>
             </CardContent>
@@ -185,72 +229,61 @@ const TemplateDetail = () => {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Template</DialogTitle>
+            <DialogTitle>Elimina Template</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the "{template.name}" template? This action cannot be undone.
+              Sei sicuro di voler eliminare il template "{template.name}"? Questa azione non può essere annullata.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              Annulla
             </Button>
             <Button variant="destructive" onClick={handleDeleteTemplate}>
-              Delete Template
+              Elimina Template
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle>Feed Preview</DialogTitle>
+            <DialogTitle>Anteprima Feed</DialogTitle>
             <DialogDescription>
-              Preview of how your data will be formatted in the feed
+              Anteprima di come i tuoi dati saranno formattati nel feed
             </DialogDescription>
           </DialogHeader>
           
+          <div className="flex justify-end mb-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleDownloadPreview}
+              disabled={!previewContent}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Scarica Anteprima
+            </Button>
+          </div>
+          
           {template.mappings.length === 0 ? (
             <Alert>
-              <AlertTitle>No mappings defined</AlertTitle>
+              <AlertTitle>Nessuna mappatura definita</AlertTitle>
               <AlertDescription>
-                Add field mappings to see a preview of your feed
+                Aggiungi mappature di campo per vedere un'anteprima del tuo feed
+              </AlertDescription>
+            </Alert>
+          ) : !previewContent ? (
+            <Alert>
+              <AlertTitle>Impossibile generare l'anteprima</AlertTitle>
+              <AlertDescription>
+                Si è verificato un errore durante la generazione dell'anteprima del feed
               </AlertDescription>
             </Alert>
           ) : (
             <div className="overflow-auto max-h-[50vh] border rounded-md">
               <pre className="p-4 text-xs overflow-auto whitespace-pre-wrap bg-muted font-mono">
-                {template.type === 'google' && `<?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
-<channel>
-  <title>${template.name}</title>
-  <link>https://example.com</link>
-  <description>${template.description}</description>
-
-  <item>
-${template.mappings.map(mapping => {
-  const value = mockSampleProducts[0][mapping.sourceField] || mapping.defaultValue || '';
-  return `    <g:${mapping.targetField}><![CDATA[${value}]]></g:${mapping.targetField}>`;
-}).join('\n')}
-  </item>
-  
-  <item>
-${template.mappings.map(mapping => {
-  const value = mockSampleProducts[1][mapping.sourceField] || mapping.defaultValue || '';
-  return `    <g:${mapping.targetField}><![CDATA[${value}]]></g:${mapping.targetField}>`;
-}).join('\n')}
-  </item>
-</channel>
-</rss>`}
-
-                {(template.type === 'meta' || template.type === 'trovaprezzi') && 
-                  `${template.mappings.map(m => m.targetField).join(',')}\n` +
-                  mockSampleProducts.slice(0, 2).map(product => 
-                    template.mappings.map(mapping => 
-                      `"${product[mapping.sourceField] || mapping.defaultValue || ''}"`
-                    ).join(',')
-                  ).join('\n')
-                }
+                {previewContent}
               </pre>
             </div>
           )}
