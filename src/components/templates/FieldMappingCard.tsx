@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { FieldMapping, FieldTransformation } from '@/types';
+import { FieldMapping, FieldTransformation, FieldTransformationType } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +41,8 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
   };
   
   const handleAddTransformation = () => {
-    const newTransformations = [...mapping.transformations, { type: 'none' }];
+    // Fix: Explicitly typing 'none' as FieldTransformationType
+    const newTransformations = [...mapping.transformations, { type: 'none' as FieldTransformationType }];
     updateFieldMapping(templateId, mapping.id, { transformations: newTransformations });
   };
   
@@ -169,7 +170,7 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
                         onValueChange={(value) => {
                           handleUpdateTransformation(index, {
                             ...transformation,
-                            type: value as FieldTransformation['type']
+                            type: value as FieldTransformationType
                           });
                         }}
                       >

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,11 +9,11 @@ import {
   Database
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Navbar = () => {
   const location = useLocation();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   
   const links = [
     { to: '/', icon: <Home className="h-4 w-4" />, label: 'Dashboard' },
