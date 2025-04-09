@@ -82,6 +82,21 @@ const applySingleTransformation = (value: any, transformation: FieldTransformati
       const divideParam = parseFloat(transformation.params?.value || '0');
       if (isNaN(divideValue) || divideParam === 0) return value;
       return divideValue / divideParam;
+    
+    // Nuove trasformazioni per operazioni percentuali
+    case 'add_percentage':
+      const addPercentValue = parseFloat(value);
+      const addPercentParam = parseFloat(transformation.params?.percentage || '0');
+      if (isNaN(addPercentValue)) return value;
+      // Aggiungiamo la percentuale: valore + (valore * percentuale / 100)
+      return addPercentValue + (addPercentValue * addPercentParam / 100);
+    
+    case 'subtract_percentage':
+      const subtractPercentValue = parseFloat(value);
+      const subtractPercentParam = parseFloat(transformation.params?.percentage || '0');
+      if (isNaN(subtractPercentValue)) return value;
+      // Sottraiamo la percentuale: valore - (valore * percentuale / 100)
+      return subtractPercentValue - (subtractPercentValue * subtractPercentParam / 100);
       
     default:
       return value;

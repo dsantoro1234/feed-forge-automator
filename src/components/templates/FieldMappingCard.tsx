@@ -80,11 +80,17 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
     'add': 'Add (number)',
     'subtract': 'Subtract (number)',
     'multiply': 'Multiply (number)',
-    'divide': 'Divide (number)'
+    'divide': 'Divide (number)',
+    'add_percentage': 'Add percentage (%)',
+    'subtract_percentage': 'Subtract percentage (%)'
   };
   
   const needsNumericParam = (type: FieldTransformationType) => {
     return ['add', 'subtract', 'multiply', 'divide'].includes(type);
+  };
+
+  const needsPercentageParam = (type: FieldTransformationType) => {
+    return ['add_percentage', 'subtract_percentage'].includes(type);
   };
   
   return (
@@ -222,6 +228,11 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
                             newParams = { ...newParams, value: '0' };
                           }
                           
+                          // Initialize percentage param if needed
+                          if (needsPercentageParam(newType) && !newParams.percentage) {
+                            newParams = { ...newParams, percentage: '0' };
+                          }
+                          
                           handleUpdateTransformation(index, {
                             type: newType,
                             params: newParams
@@ -253,6 +264,24 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
                         />
                       )}
                       
+                      {needsPercentageParam(transformation.type) && (
+                        <div className="flex items-center">
+                          <Input
+                            type="number"
+                            placeholder="Percentage"
+                            className="w-24"
+                            value={transformation.params?.percentage || '0'}
+                            onChange={(e) => {
+                              handleUpdateTransformation(index, {
+                                ...transformation,
+                                params: { ...transformation.params, percentage: e.target.value }
+                              });
+                            }}
+                          />
+                          <span className="ml-1">%</span>
+                        </div>
+                      )}
+                      
                       <Button variant="ghost" size="icon" onClick={() => handleRemoveTransformation(index)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -269,3 +298,4 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
 };
 
 export default FieldMappingCard;
+

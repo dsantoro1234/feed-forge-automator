@@ -1,4 +1,3 @@
-
 export interface ApiConfig {
   endpoint: string;
   apiKey: string;
@@ -27,7 +26,9 @@ export type FieldTransformationType =
   | 'add'       // Nuova trasformazione: somma
   | 'subtract'  // Nuova trasformazione: sottrazione
   | 'multiply'  // Nuova trasformazione: moltiplicazione
-  | 'divide';   // Nuova trasformazione: divisione
+  | 'divide'    // Nuova trasformazione: divisione
+  | 'add_percentage'    // Nuova trasformazione: aggiunge una percentuale
+  | 'subtract_percentage'; // Nuova trasformazione: sottrae una percentuale
 
 export interface FieldTransformation {
   type: FieldTransformationType;
