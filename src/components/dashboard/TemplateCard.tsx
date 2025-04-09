@@ -54,6 +54,14 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template }) => {
     }
   };
   
+  const handlePublicUrlClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // Prevent navigation, we'll handle this with our route
+    e.preventDefault();
+    
+    // Navigate to the URL which will trigger the download
+    window.open(window.location.origin + publicFeedUrl!, '_blank');
+  };
+  
   return (
     <Card className={template.isActive ? 'border-l-4 border-l-primary' : ''}>
       <CardHeader>
@@ -80,9 +88,14 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template }) => {
               <div className="mt-2 p-2 bg-muted rounded-md flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm truncate">
                   <ExternalLink className="h-4 w-4 text-primary" />
-                  <span className="truncate" title={window.location.origin + publicFeedUrl}>
+                  <a 
+                    href={publicFeedUrl} 
+                    className="truncate hover:underline text-primary"
+                    onClick={handlePublicUrlClick}
+                    title={window.location.origin + publicFeedUrl}
+                  >
                     {window.location.origin + publicFeedUrl}
-                  </span>
+                  </a>
                 </div>
                 <TooltipProvider>
                   <Tooltip>
@@ -106,7 +119,7 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template }) => {
                 <div className="flex items-center gap-2 text-sm truncate">
                   <FolderOpen className="h-4 w-4 text-amber-600" />
                   <span className="truncate">
-                    Stored at: /feeds/{template.id}.{template.type === 'google' ? 'xml' : 'csv'}
+                    Storage ID: {template.id}.{template.type === 'google' ? 'xml' : 'csv'}
                   </span>
                 </div>
               </div>

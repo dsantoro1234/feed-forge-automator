@@ -18,37 +18,28 @@ interface FeedHistoryContextType {
 
 const FeedHistoryContext = createContext<FeedHistoryContextType | undefined>(undefined);
 
-// In a real implementation, this would be a server-side directory
-const FEEDS_DIRECTORY = '/feeds';
+// Storage keys for feed content
+const FEED_STORAGE_PREFIX = 'feed_content_';
 
-// Generate paths for feed files
-const generateFeedPaths = (templateId: string, type: string): { publicUrl: string, filePath: string } => {
+// Create mock public URL for feeds
+const generatePublicFeedUrl = (templateId: string, type: string): string => {
   const extension = type === 'google' ? 'xml' : 'csv';
-  const fileName = `${templateId}.${extension}`;
-  
-  // In a production environment, this would be a server path
-  const filePath = `${FEEDS_DIRECTORY}/${fileName}`;
-  
-  // URL that will be accessible publicly
-  const publicUrl = `/feeds/${fileName}`;
-  
-  return { publicUrl, filePath };
+  return `/api/feeds/${templateId}.${extension}`;
 };
 
-// Simulate writing to a physical file (would be server-side in production)
-const saveToFile = async (content: string, filePath: string): Promise<boolean> => {
-  console.log(`Saving feed to ${filePath}`);
+// This function actually retrieves the feed content from storage
+export const getFeedContent = (templateId: string, type: string): string | null => {
+  const extension = type === 'google' ? 'xml' : 'csv';
+  const storageKey = `${FEED_STORAGE_PREFIX}${templateId}`;
+  return localStorage.getItem(storageKey);
+};
+
+// Save feed content to storage
+const saveFeedContent = (templateId: string, content: string): boolean => {
+  const storageKey = `${FEED_STORAGE_PREFIX}${templateId}`;
   
-  // In a real implementation, this would write to the filesystem
-  // For the demo, we're simulating successful file creation
-  
-  // Simulate a small delay for "file writing"
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  // Store the content in localStorage for demo purposes
-  // In a real app, this would be a file on the server
   try {
-    localStorage.setItem(`feed_file_${filePath}`, content);
+    localStorage.setItem(storageKey, content);
     return true;
   } catch (error) {
     console.error('Error saving feed to storage:', error);
@@ -97,13 +88,17 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
       // Generate feed content based on template type
       const content = generateFeedByType(productsToUse, template);
       
-      // Generate paths for the feed file
-      const { publicUrl, filePath } = generateFeedPaths(template.id, template.type);
+      // Create a virtual file path (for display only)
+      const extension = template.type === 'google' ? 'xml' : 'csv';
+      const filePath = `/feeds/${template.id}.${extension}`;
       
-      // Save the feed to a "physical" file
-      const saveSuccess = await saveToFile(content, filePath);
+      // Generate a public URL for the feed
+      const publicUrl = generatePublicFeedUrl(template.id, template.type);
+      
+      // Save the feed content to storage using the template ID
+      const saveSuccess = saveFeedContent(template.id, content);
       if (!saveSuccess) {
-        throw new Error('Failed to save feed file');
+        throw new Error('Failed to save feed content');
       }
       
       // Create a URL object for browser download
@@ -133,9 +128,6 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setHistory(prev => [newHistory, ...prev]);
       toast.success('Feed generato con successo');
       
-      // Update the template's lastGenerated field by calling the API
-      // This would typically be handled by the server in a production environment
-      
       return Promise.resolve();
     } catch (error) {
       console.error('Errore durante la generazione del feed:', error);
@@ -161,35 +153,26 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const downloadFeed = (historyId: string) => {
     const item = history.find(h => h.id === historyId);
-    if (!item || !item.fileUrl || item.fileUrl === '#') {
+    if (!item || !item.templateId) {
       toast.error('File feed non disponibile');
       return;
     }
 
-    // Use the existing utility function for downloading
-    const extension = item.type === 'google' ? '.xml' : '.csv';
-    const filename = `${item.templateName.toLowerCase().replace(/\s+/g, '-')}-${new Date(item.generatedAt).toISOString().slice(0, 10)}${extension}`;
-    
     // Create a function to get the feed content
     const fetchAndDownload = async () => {
       try {
-        // In a real app, we would fetch from the filePath
-        // For the demo, we either use the fileUrl or get from localStorage
-        let content;
-        
-        if (item.filePath && localStorage.getItem(`feed_file_${item.filePath}`)) {
-          // Get from our simulated file system
-          content = localStorage.getItem(`feed_file_${item.filePath}`);
-        } else if (item.fileUrl) {
-          // Fallback to the URL blob
-          const response = await fetch(item.fileUrl);
-          content = await response.text();
-        }
+        // Get feed content from storage
+        const content = getFeedContent(item.templateId, item.type);
         
         if (!content) {
           throw new Error('Feed content not available');
         }
         
+        // Generate a filename
+        const extension = item.type === 'google' ? '.xml' : '.csv';
+        const filename = `${item.templateName.toLowerCase().replace(/\s+/g, '-')}-${new Date(item.generatedAt).toISOString().slice(0, 10)}${extension}`;
+        
+        // Download the file
         downloadFeedFile(content, filename, item.type === 'google' ? 'xml' : 'csv');
       } catch (error) {
         console.error('Errore durante il download del feed:', error);
@@ -204,10 +187,9 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // Get the item before we remove it
     const item = history.find(h => h.id === historyId);
     
-    if (item && item.filePath) {
-      // In a real app, we would delete the file from the filesystem
-      // For the demo, we'll remove it from localStorage
-      localStorage.removeItem(`feed_file_${item.filePath}`);
+    if (item && item.templateId) {
+      // Remove the feed content from storage
+      localStorage.removeItem(`${FEED_STORAGE_PREFIX}${item.templateId}`);
     }
     
     setHistory(prev => prev.filter(h => h.id !== historyId));
