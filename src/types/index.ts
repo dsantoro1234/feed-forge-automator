@@ -1,4 +1,3 @@
-
 export interface ApiConfig {
   endpoint: string;
   apiKey: string;
@@ -149,9 +148,38 @@ export interface GoogleShoppingFields {
   expiration_date?: string;
   shipping?: string;
   shipping_weight?: string;
+  shipping_length?: string;
+  shipping_width?: string;
+  shipping_height?: string;
+  shipping_label?: string;
+  transit_time_label?: string;
+  max_handling_time?: number;
+  min_handling_time?: number;
+  tax?: string;
+  tax_category?: string;
+  size?: string;
+  size_type?: string;
+  size_system?: string;
+  installment?: string;
+  subscription_cost?: string;
+  loyalty_points?: string;
+  display_ads_id?: string;
+  display_ads_similar_ids?: string;
+  display_ads_title?: string;
+  display_ads_link?: string;
+  display_ads_value?: string;
+  promotion_id?: string;
+  included_destination?: string[];
+  excluded_destination?: string[];
+  ads_redirect?: string;
   custom_label_0?: string;
   custom_label_1?: string;
   custom_label_2?: string;
   custom_label_3?: string;
   custom_label_4?: string;
+  unit_pricing_measure?: string;
+  unit_pricing_base_measure?: string;
+  cost_of_goods_sold?: string;
+  availability_date?: string;
+  sell_on_google_quantity?: number;
 }

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { FeedTemplate, FieldMapping } from '@/types';
 import { mockTemplates } from '@/data/mockData';
@@ -26,8 +25,6 @@ export const TemplateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, you would load the templates from an API or localStorage
-    // For the demo, we'll use the mock data and simulate a loading delay
     const timer = setTimeout(() => {
       setTemplates(mockTemplates);
       setIsLoading(false);
@@ -111,7 +108,6 @@ export const TemplateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     toast.success('Field mapping removed');
   };
 
-  // New function to get Google Shopping field definitions
   const getGoogleShoppingFields = () => {
     return [
       // Required fields
@@ -143,18 +139,50 @@ export const TemplateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       { field: 'sale_price_effective_date', required: false, description: 'Date range when sale price is in effect', example: '2023-01-15T13:00:00-08:00/2023-01-22T15:30:00-08:00' },
       { field: 'shipping', required: false, description: 'Shipping cost and delivery time', example: 'US:CA:Ground:9.99 USD' },
       { field: 'shipping_weight', required: false, description: 'Product\'s shipping weight', example: '1.5 kg' },
+      { field: 'shipping_length', required: false, description: 'Product\'s shipping length', example: '5 in' },
+      { field: 'shipping_width', required: false, description: 'Product\'s shipping width', example: '5 in' },
+      { field: 'shipping_height', required: false, description: 'Product\'s shipping height', example: '5 in' },
+      { field: 'shipping_label', required: false, description: 'Shipping label from the account settings', example: 'Free shipping' },
+      { field: 'transit_time_label', required: false, description: 'Transit time from account settings', example: '5-7 business days' },
+      { field: 'max_handling_time', required: false, description: 'Maximum time for order handling in days', example: '2' },
+      { field: 'min_handling_time', required: false, description: 'Minimum time for order handling in days', example: '1' },
+      { field: 'tax', required: false, description: 'Product tax rate', example: 'US:CA:6.5:y' },
+      { field: 'tax_category', required: false, description: 'Product tax category', example: 'tax_digital_goods' },
       { field: 'adult', required: false, description: 'Whether the product contains adult content', example: 'no' },
       { field: 'multipack', required: false, description: 'Number of identical products in a multipack', example: '6' },
       { field: 'is_bundle', required: false, description: 'Whether the product is a bundle of different products', example: 'true' },
+      { field: 'energy_efficiency_class', required: false, description: 'Product\'s energy efficiency class', example: 'A++' },
+      { field: 'min_energy_efficiency_class', required: false, description: 'Product\'s minimum energy efficiency class range', example: 'A+' },
+      { field: 'max_energy_efficiency_class', required: false, description: 'Product\'s maximum energy efficiency class range', example: 'A+++' },
+      { field: 'size', required: false, description: 'Product\'s size', example: 'XL' },
+      { field: 'size_type', required: false, description: 'Size type', example: 'regular' },
+      { field: 'size_system', required: false, description: 'Size system used', example: 'US' },
+      { field: 'installment', required: false, description: 'Installment payment details', example: 'US:12:100.00 USD' },
+      { field: 'subscription_cost', required: false, description: 'Subscription cost information', example: '9.99 USD:1 month:3.99 USD' },
+      { field: 'loyalty_points', required: false, description: 'Loyalty points earned with purchase', example: 'program_name:100:1.0:USD' },
+      { field: 'display_ads_id', required: false, description: 'ID to link product to Google display ads', example: 'AD123' },
+      { field: 'display_ads_similar_ids', required: false, description: 'IDs of similar products for display ads', example: 'AD124,AD125,AD126' },
+      { field: 'display_ads_title', required: false, description: 'Product title for display ads', example: 'Amazing Deal - Pixel 6' },
+      { field: 'display_ads_link', required: false, description: 'Link for display ads', example: 'https://example.com/ads/pixel-6' },
+      { field: 'display_ads_value', required: false, description: 'Value of the item for conversion tracking', example: '699.00 USD' },
+      { field: 'promotion_id', required: false, description: 'ID that Google Merchant Center promotions reference', example: 'SUMMER_SALE' },
+      { field: 'included_destination', required: false, description: 'Where the product should be advertised', example: 'Shopping,Display' },
+      { field: 'excluded_destination', required: false, description: 'Where the product should not be advertised', example: 'Local' },
+      { field: 'ads_redirect', required: false, description: 'Alternative URL for Google Search ads', example: 'https://example.com/ads/pixel-6' },
       { field: 'custom_label_0', required: false, description: 'Custom grouping of products (label 0)', example: 'Bestseller' },
       { field: 'custom_label_1', required: false, description: 'Custom grouping of products (label 1)', example: 'Summer' },
       { field: 'custom_label_2', required: false, description: 'Custom grouping of products (label 2)', example: 'Clearance' },
       { field: 'custom_label_3', required: false, description: 'Custom grouping of products (label 3)', example: 'New' },
       { field: 'custom_label_4', required: false, description: 'Custom grouping of products (label 4)', example: 'Limited Edition' },
+      { field: 'availability_date', required: false, description: 'Date a preordered or backordered product becomes available', example: '2023-12-25T13:00:00-08:00' },
+      { field: 'expiration_date', required: false, description: 'Date content expires', example: '2024-12-31T23:59:59-08:00' },
+      { field: 'unit_pricing_measure', required: false, description: 'The measure and dimension of the product', example: '750ml' },
+      { field: 'unit_pricing_base_measure', required: false, description: 'The product's base measure for pricing', example: '100ml' },
+      { field: 'cost_of_goods_sold', required: false, description: 'Cost of the product with currency', example: '400.00 USD' },
+      { field: 'sell_on_google_quantity', required: false, description: 'The number of this product you\'d like to sell through Buy on Google', example: '10' },
     ];
   };
 
-  // Add all predefined Google Shopping fields to a template
   const addPredefinedGoogleFields = (templateId: string) => {
     const googleFields = getGoogleShoppingFields();
     const template = getTemplateById(templateId);
@@ -164,7 +192,6 @@ export const TemplateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
     
-    // Get existing field names to avoid duplicates
     const existingFields = new Set(template.mappings.map(m => m.targetField));
     const fieldsToAdd = googleFields.filter(f => !existingFields.has(f.field));
     
@@ -173,7 +200,6 @@ export const TemplateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
     
-    // Add all fields
     setTemplates(prev => 
       prev.map(t => {
         if (t.id === templateId) {
