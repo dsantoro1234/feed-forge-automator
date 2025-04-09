@@ -57,6 +57,32 @@ const applySingleTransformation = (value: any, transformation: FieldTransformati
     case 'concatenate':
       const template = transformation.params?.template || '';
       return template.replace(/\{value\}/g, String(value));
+    
+    // Nuove trasformazioni per operazioni matematiche
+    case 'add':
+      const addValue = parseFloat(value);
+      const addParam = parseFloat(transformation.params?.value || '0');
+      if (isNaN(addValue)) return value;
+      return addValue + addParam;
+    
+    case 'subtract':
+      const subtractValue = parseFloat(value);
+      const subtractParam = parseFloat(transformation.params?.value || '0');
+      if (isNaN(subtractValue)) return value;
+      return subtractValue - subtractParam;
+    
+    case 'multiply':
+      const multiplyValue = parseFloat(value);
+      const multiplyParam = parseFloat(transformation.params?.value || '0');
+      if (isNaN(multiplyValue)) return value;
+      return multiplyValue * multiplyParam;
+    
+    case 'divide':
+      const divideValue = parseFloat(value);
+      const divideParam = parseFloat(transformation.params?.value || '0');
+      if (isNaN(divideValue) || divideParam === 0) return value;
+      return divideValue / divideParam;
+      
     default:
       return value;
   }

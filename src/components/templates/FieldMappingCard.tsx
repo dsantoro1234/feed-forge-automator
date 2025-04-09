@@ -17,6 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface FieldMappingCardProps {
   templateId: string;
@@ -75,7 +76,15 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
     'trim': 'Trim',
     'number_format': 'Number format',
     'date_format': 'Date format',
-    'concatenate': 'Concatenate'
+    'concatenate': 'Concatenate',
+    'add': 'Add (number)',
+    'subtract': 'Subtract (number)',
+    'multiply': 'Multiply (number)',
+    'divide': 'Divide (number)'
+  };
+  
+  const needsNumericParam = (type: FieldTransformationType) => {
+    return ['add', 'subtract', 'multiply', 'divide'].includes(type);
   };
   
   return (
@@ -205,9 +214,17 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
                       <Select
                         value={transformation.type}
                         onValueChange={(value) => {
+                          const newType = value as FieldTransformationType;
+                          let newParams = transformation.params || {};
+                          
+                          // Initialize numeric param if needed
+                          if (needsNumericParam(newType) && !newParams.value) {
+                            newParams = { ...newParams, value: '0' };
+                          }
+                          
                           handleUpdateTransformation(index, {
-                            ...transformation,
-                            type: value as FieldTransformationType
+                            type: newType,
+                            params: newParams
                           });
                         }}
                       >
@@ -220,6 +237,21 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
                           ))}
                         </SelectContent>
                       </Select>
+                      
+                      {needsNumericParam(transformation.type) && (
+                        <Input
+                          type="number"
+                          placeholder="Value"
+                          className="w-24"
+                          value={transformation.params?.value || '0'}
+                          onChange={(e) => {
+                            handleUpdateTransformation(index, {
+                              ...transformation,
+                              params: { ...transformation.params, value: e.target.value }
+                            });
+                          }}
+                        />
+                      )}
                       
                       <Button variant="ghost" size="icon" onClick={() => handleRemoveTransformation(index)}>
                         <Trash2 className="h-4 w-4" />

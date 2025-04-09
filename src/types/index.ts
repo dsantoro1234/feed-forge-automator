@@ -1,3 +1,4 @@
+
 export interface ApiConfig {
   endpoint: string;
   apiKey: string;
@@ -22,7 +23,11 @@ export type FieldTransformationType =
   | 'trim'
   | 'number_format'
   | 'date_format'
-  | 'concatenate';
+  | 'concatenate'
+  | 'add'       // Nuova trasformazione: somma
+  | 'subtract'  // Nuova trasformazione: sottrazione
+  | 'multiply'  // Nuova trasformazione: moltiplicazione
+  | 'divide';   // Nuova trasformazione: divisione
 
 export interface FieldTransformation {
   type: FieldTransformationType;
