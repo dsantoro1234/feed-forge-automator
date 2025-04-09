@@ -5,6 +5,7 @@ import { mockFeedHistory, mockSampleProducts } from '@/data/mockData';
 import { v4 as uuidv4 } from 'uuid';
 import { generateFeedByType, downloadFeedFile } from '@/utils/feedGenerators';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface FeedHistoryContextType {
   history: FeedHistory[];
@@ -17,12 +18,42 @@ interface FeedHistoryContextType {
 
 const FeedHistoryContext = createContext<FeedHistoryContextType | undefined>(undefined);
 
-// Generate a persistent "public" URL for a template
-const generatePublicFeedUrl = (templateId: string, type: string): string => {
-  // In a real app this would be a permanent URL on your server or CDN
-  // For this demo we'll use a pseudo URL that represents this concept
+// In a real implementation, this would be a server-side directory
+const FEEDS_DIRECTORY = '/feeds';
+
+// Generate paths for feed files
+const generateFeedPaths = (templateId: string, type: string): { publicUrl: string, filePath: string } => {
   const extension = type === 'google' ? 'xml' : 'csv';
-  return `/feeds/${templateId}.${extension}`;
+  const fileName = `${templateId}.${extension}`;
+  
+  // In a production environment, this would be a server path
+  const filePath = `${FEEDS_DIRECTORY}/${fileName}`;
+  
+  // URL that will be accessible publicly
+  const publicUrl = `/feeds/${fileName}`;
+  
+  return { publicUrl, filePath };
+};
+
+// Simulate writing to a physical file (would be server-side in production)
+const saveToFile = async (content: string, filePath: string): Promise<boolean> => {
+  console.log(`Saving feed to ${filePath}`);
+  
+  // In a real implementation, this would write to the filesystem
+  // For the demo, we're simulating successful file creation
+  
+  // Simulate a small delay for "file writing"
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Store the content in localStorage for demo purposes
+  // In a real app, this would be a file on the server
+  try {
+    localStorage.setItem(`feed_file_${filePath}`, content);
+    return true;
+  } catch (error) {
+    console.error('Error saving feed to storage:', error);
+    return false;
+  }
 };
 
 export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -30,6 +61,7 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [isLoading, setIsLoading] = useState(true);
   // Map to store the latest public URL for each template
   const [publicFeedUrls, setPublicFeedUrls] = useState<Record<string, string>>({});
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     // In a real app, you would load the history from an API or localStorage
@@ -53,7 +85,7 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, []);
 
   const generateFeed = async (template: FeedTemplate, customProducts?: Product[]): Promise<void> => {
-    // Utilizza i prodotti passati o i prodotti mock
+    // Use provided products or mock products
     const productsToUse = customProducts || mockSampleProducts;
     
     try {
@@ -62,18 +94,21 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      let fileUrl = '#';
-      let content = '';
+      // Generate feed content based on template type
+      const content = generateFeedByType(productsToUse, template);
       
-      // Generate appropriate feed based on template type
-      content = generateFeedByType(productsToUse, template);
+      // Generate paths for the feed file
+      const { publicUrl, filePath } = generateFeedPaths(template.id, template.type);
       
-      // Create a URL object for download
+      // Save the feed to a "physical" file
+      const saveSuccess = await saveToFile(content, filePath);
+      if (!saveSuccess) {
+        throw new Error('Failed to save feed file');
+      }
+      
+      // Create a URL object for browser download
       const contentType = template.type === 'google' ? 'application/xml' : 'text/csv';
-      fileUrl = URL.createObjectURL(new Blob([content], { type: contentType }));
-      
-      // Generate a permanent public URL for this feed
-      const publicUrl = generatePublicFeedUrl(template.id, template.type);
+      const fileUrl = URL.createObjectURL(new Blob([content], { type: contentType }));
       
       // Update the publicFeedUrls map
       setPublicFeedUrls(prev => ({
@@ -89,13 +124,17 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         generatedAt: new Date().toISOString(),
         status: 'success',
         fileUrl,
-        publicUrl, // Add the public URL
+        publicUrl,
+        filePath,
         productCount: productsToUse.length,
         warningCount: 0
       };
       
       setHistory(prev => [newHistory, ...prev]);
       toast.success('Feed generato con successo');
+      
+      // Update the template's lastGenerated field by calling the API
+      // This would typically be handled by the server in a production environment
       
       return Promise.resolve();
     } catch (error) {
@@ -108,7 +147,7 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         type: template.type,
         generatedAt: new Date().toISOString(),
         status: 'error',
-        errorMessage: 'Errore durante la generazione del feed',
+        errorMessage: error instanceof Error ? error.message : 'Errore durante la generazione del feed',
         productCount: 0,
         warningCount: 0
       };
@@ -127,15 +166,30 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return;
     }
 
-    // Use the new utility function for downloading
+    // Use the existing utility function for downloading
     const extension = item.type === 'google' ? '.xml' : '.csv';
     const filename = `${item.templateName.toLowerCase().replace(/\s+/g, '-')}-${new Date(item.generatedAt).toISOString().slice(0, 10)}${extension}`;
     
-    // Crea una funzione per ottenere il contenuto del feed dalla URL
+    // Create a function to get the feed content
     const fetchAndDownload = async () => {
       try {
-        const response = await fetch(item.fileUrl!);
-        const content = await response.text();
+        // In a real app, we would fetch from the filePath
+        // For the demo, we either use the fileUrl or get from localStorage
+        let content;
+        
+        if (item.filePath && localStorage.getItem(`feed_file_${item.filePath}`)) {
+          // Get from our simulated file system
+          content = localStorage.getItem(`feed_file_${item.filePath}`);
+        } else if (item.fileUrl) {
+          // Fallback to the URL blob
+          const response = await fetch(item.fileUrl);
+          content = await response.text();
+        }
+        
+        if (!content) {
+          throw new Error('Feed content not available');
+        }
+        
         downloadFeedFile(content, filename, item.type === 'google' ? 'xml' : 'csv');
       } catch (error) {
         console.error('Errore durante il download del feed:', error);
@@ -147,6 +201,15 @@ export const FeedHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const deleteFeedHistory = (historyId: string) => {
+    // Get the item before we remove it
+    const item = history.find(h => h.id === historyId);
+    
+    if (item && item.filePath) {
+      // In a real app, we would delete the file from the filesystem
+      // For the demo, we'll remove it from localStorage
+      localStorage.removeItem(`feed_file_${item.filePath}`);
+    }
+    
     setHistory(prev => prev.filter(h => h.id !== historyId));
     toast.success('Voce cronologia feed eliminata');
   };

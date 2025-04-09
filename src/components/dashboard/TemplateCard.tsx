@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { FeedTemplate } from '@/types';
 import { Link } from 'react-router-dom';
-import { Calendar, Database, FileCode, Play, Copy, ExternalLink } from 'lucide-react';
+import { Calendar, Database, FileCode, Play, Copy, ExternalLink, FolderOpen } from 'lucide-react';
 import { format } from 'date-fns';
 import { useFeedHistory } from '@/contexts/FeedHistoryContext';
 import { toast } from 'sonner';
@@ -76,30 +76,41 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template }) => {
             </div>
           )}
           {publicFeedUrl && (
-            <div className="mt-2 p-2 bg-muted rounded-md flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm truncate">
-                <ExternalLink className="h-4 w-4 text-primary" />
-                <span className="truncate" title={window.location.origin + publicFeedUrl}>
-                  {window.location.origin + publicFeedUrl}
-                </span>
+            <>
+              <div className="mt-2 p-2 bg-muted rounded-md flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm truncate">
+                  <ExternalLink className="h-4 w-4 text-primary" />
+                  <span className="truncate" title={window.location.origin + publicFeedUrl}>
+                    {window.location.origin + publicFeedUrl}
+                  </span>
+                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => copyToClipboard(publicFeedUrl)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Copy public feed URL</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => copyToClipboard(publicFeedUrl)}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Copy public feed URL</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
+              
+              <div className="p-2 bg-muted/50 rounded-md flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm truncate">
+                  <FolderOpen className="h-4 w-4 text-amber-600" />
+                  <span className="truncate">
+                    Stored at: /feeds/{template.id}.{template.type === 'google' ? 'xml' : 'csv'}
+                  </span>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </CardContent>

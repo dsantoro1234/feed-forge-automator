@@ -58,7 +58,8 @@ export interface FeedHistory {
   generatedAt: string;
   status: 'success' | 'error' | 'warning';
   fileUrl?: string;
-  publicUrl?: string;  // Add this line for the permanent public URL
+  publicUrl?: string;  // Permanent public URL
+  filePath?: string;   // Path to the physical file on server
   errorMessage?: string;
   productCount: number;
   warningCount: number;

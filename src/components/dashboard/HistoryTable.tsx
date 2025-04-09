@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { FeedHistory } from '@/types';
 import { 
   Table, 
@@ -17,12 +17,14 @@ import {
   AlertCircle, 
   AlertTriangle,
   Link as LinkIcon,
-  Copy
+  Copy,
+  FolderOpen
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useFeedHistory } from '@/contexts/FeedHistoryContext';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface HistoryTableProps {
   history: FeedHistory[];
@@ -98,7 +100,15 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ history, limit }) => {
             displayedHistory.map((item) => (
               <TableRow key={item.id}>
                 <TableCell>{format(new Date(item.generatedAt), 'PP HH:mm')}</TableCell>
-                <TableCell>{item.templateName}</TableCell>
+                <TableCell>
+                  <div>{item.templateName}</div>
+                  {item.filePath && (
+                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                      <FolderOpen className="h-3 w-3" />
+                      {item.filePath}
+                    </div>
+                  )}
+                </TableCell>
                 <TableCell>{getFeedTypeBadge(item.type)}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -121,24 +131,51 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ history, limit }) => {
                   <div className="flex justify-end gap-2">
                     {item.status === 'success' && (
                       <>
-                        <Button size="icon" variant="ghost" onClick={() => handleDownload(item.id)}>
-                          <Download className="h-4 w-4" />
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button size="icon" variant="ghost" onClick={() => handleDownload(item.id)}>
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Download feed</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        
                         {item.publicUrl && (
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            title="Copy public feed URL"
-                            onClick={() => copyToClipboard(item.publicUrl!)}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  size="icon" 
+                                  variant="ghost" 
+                                  onClick={() => copyToClipboard(item.publicUrl!)}
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Copy public feed URL</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                       </>
                     )}
-                    <Button size="icon" variant="ghost" onClick={() => handleDelete(item.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="icon" variant="ghost" onClick={() => handleDelete(item.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Delete feed</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </TableCell>
               </TableRow>
