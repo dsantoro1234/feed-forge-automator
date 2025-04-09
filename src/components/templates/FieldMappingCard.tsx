@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Trash2, ArrowRight, Plus, Edit, Info } from 'lucide-react';
 import { useTemplates } from '@/contexts/TemplateContext';
+import { useProducts } from '@/contexts/ProductContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -24,6 +25,7 @@ interface FieldMappingCardProps {
 
 const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping }) => {
   const { updateFieldMapping, deleteFieldMapping } = useTemplates();
+  const { getProductFields } = useProducts();
   const [isEditing, setIsEditing] = useState(false);
   
   // Form state
@@ -31,6 +33,7 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
   const [targetField, setTargetField] = useState(mapping.targetField);
   const [isRequired, setIsRequired] = useState(mapping.isRequired);
   const [defaultValue, setDefaultValue] = useState(mapping.defaultValue || '');
+  const availableSourceFields = getProductFields();
   
   const handleSave = () => {
     updateFieldMapping(templateId, mapping.id, {
@@ -83,12 +86,21 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="sourceField">Source Field</Label>
-                <Input
-                  id="sourceField"
+                <Select
                   value={sourceField}
-                  onChange={(e) => setSourceField(e.target.value)}
-                  placeholder="product_id"
-                />
+                  onValueChange={setSourceField}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a field from database" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSourceFields.map(f => (
+                      <SelectItem key={f} value={f}>
+                        {f}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="targetField">Target Field</Label>
