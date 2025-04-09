@@ -57,8 +57,11 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ existingTemplate }) => {
       navigate(`/templates/${existingTemplate.id}`);
     } else {
       createTemplate({
-        ...values,
-        mappings: [],
+        name: values.name,
+        description: values.description,
+        type: values.type,
+        isActive: values.isActive,
+        mappings: []
       });
       navigate('/templates');
     }

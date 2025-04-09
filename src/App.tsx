@@ -11,10 +11,12 @@ import TemplateDetail from "./pages/TemplateDetail";
 import CreateTemplate from "./pages/CreateTemplate";
 import History from "./pages/History";
 import Settings from "./pages/Settings";
+import Products from "./pages/Products";
 import NotFound from "./pages/NotFound";
 import { ConfigProvider } from "./contexts/ConfigContext";
 import { TemplateProvider } from "./contexts/TemplateContext";
 import { FeedHistoryProvider } from "./contexts/FeedHistoryContext";
+import { ProductProvider } from "./contexts/ProductContext";
 
 const queryClient = new QueryClient();
 
@@ -22,25 +24,28 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <ConfigProvider>
-        <TemplateProvider>
-          <FeedHistoryProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/templates" element={<TemplateList />} />
-                  <Route path="/templates/new" element={<CreateTemplate />} />
-                  <Route path="/templates/:id" element={<TemplateDetail />} />
-                  <Route path="/history" element={<History />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Layout>
-            </BrowserRouter>
-          </FeedHistoryProvider>
-        </TemplateProvider>
+        <ProductProvider>
+          <TemplateProvider>
+            <FeedHistoryProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/templates" element={<TemplateList />} />
+                    <Route path="/templates/new" element={<CreateTemplate />} />
+                    <Route path="/templates/:id" element={<TemplateDetail />} />
+                    <Route path="/products" element={<Products />} />
+                    <Route path="/history" element={<History />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Layout>
+              </BrowserRouter>
+            </FeedHistoryProvider>
+          </TemplateProvider>
+        </ProductProvider>
       </ConfigProvider>
     </TooltipProvider>
   </QueryClientProvider>

@@ -44,7 +44,10 @@ const AddFieldMappingForm: React.FC<AddFieldMappingFormProps> = ({ templateId, o
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     addFieldMapping(templateId, {
-      ...values,
+      sourceField: values.sourceField,
+      targetField: values.targetField,
+      isRequired: values.isRequired,
+      defaultValue: values.defaultValue || '',
       transformations: []
     });
     form.reset();
