@@ -1,4 +1,3 @@
-
 import { FieldTransformation } from '@/types';
 
 // Helper function to apply transformations to a single field
@@ -377,6 +376,21 @@ export const applyTransformation = (value: any, transformation: FieldTransformat
     default:
       return value;
   }
+};
+
+// Apply an array of transformations to a value
+export const applyTransformations = (value: any, transformations: FieldTransformation[] = []): any => {
+  if (!transformations || transformations.length === 0) {
+    return value;
+  }
+  
+  let result = value;
+  
+  for (const transformation of transformations) {
+    result = applyTransformation(result, transformation);
+  }
+  
+  return result;
 };
 
 // Utility function to combine multiple fields

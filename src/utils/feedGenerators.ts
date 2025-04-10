@@ -1,6 +1,6 @@
 
-import { FeedTemplate, Product, FieldMapping } from '@/types';
-import { applyTransformations } from './transformations';
+import { FeedTemplate, Product } from '@/types';
+import { applyTransformation, applyTransformations } from './transformations';
 import { validateGoogleFeed, validateMetaFeed, validateTrovaprezzi } from './validation';
 
 export const generateGoogleFeed = (products: Product[], template: FeedTemplate): string => {
