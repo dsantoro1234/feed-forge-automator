@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Trash2, ArrowRight, Plus, Edit, Info } from 'lucide-react';
 import { useTemplates } from '@/contexts/TemplateContext';
 import { useProducts } from '@/contexts/ProductContext';
+import { useExchangeRates } from '@/contexts/ExchangeRateContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -17,7 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import TransformationEditor from './TransformationEditor';
 
 interface FieldMappingCardProps {
   templateId: string;
@@ -66,31 +67,6 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
     const newTransformations = [...mapping.transformations];
     newTransformations.splice(index, 1);
     updateFieldMapping(templateId, mapping.id, { transformations: newTransformations });
-  };
-  
-  const transformationLabels: Record<FieldTransformation['type'], string> = {
-    'none': 'No transformation',
-    'uppercase': 'Uppercase',
-    'lowercase': 'Lowercase',
-    'capitalize': 'Capitalize',
-    'trim': 'Trim',
-    'number_format': 'Number format',
-    'date_format': 'Date format',
-    'concatenate': 'Concatenate',
-    'add': 'Add (number)',
-    'subtract': 'Subtract (number)',
-    'multiply': 'Multiply (number)',
-    'divide': 'Divide (number)',
-    'add_percentage': 'Add percentage (%)',
-    'subtract_percentage': 'Subtract percentage (%)'
-  };
-  
-  const needsNumericParam = (type: FieldTransformationType) => {
-    return ['add', 'subtract', 'multiply', 'divide'].includes(type);
-  };
-
-  const needsPercentageParam = (type: FieldTransformationType) => {
-    return ['add_percentage', 'subtract_percentage'].includes(type);
   };
   
   return (
@@ -216,75 +192,12 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
               ) : (
                 <div className="space-y-2">
                   {mapping.transformations.map((transformation, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <Select
-                        value={transformation.type}
-                        onValueChange={(value) => {
-                          const newType = value as FieldTransformationType;
-                          let newParams = transformation.params || {};
-                          
-                          // Initialize numeric param if needed
-                          if (needsNumericParam(newType) && !newParams.value) {
-                            newParams = { ...newParams, value: '0' };
-                          }
-                          
-                          // Initialize percentage param if needed
-                          if (needsPercentageParam(newType) && !newParams.percentage) {
-                            newParams = { ...newParams, percentage: '0' };
-                          }
-                          
-                          handleUpdateTransformation(index, {
-                            type: newType,
-                            params: newParams
-                          });
-                        }}
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Select transformation" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(transformationLabels).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>{label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      {needsNumericParam(transformation.type) && (
-                        <Input
-                          type="number"
-                          placeholder="Value"
-                          className="w-24"
-                          value={transformation.params?.value || '0'}
-                          onChange={(e) => {
-                            handleUpdateTransformation(index, {
-                              ...transformation,
-                              params: { ...transformation.params, value: e.target.value }
-                            });
-                          }}
-                        />
-                      )}
-                      
-                      {needsPercentageParam(transformation.type) && (
-                        <div className="flex items-center">
-                          <Input
-                            type="number"
-                            placeholder="Percentage"
-                            className="w-24"
-                            value={transformation.params?.percentage || '0'}
-                            onChange={(e) => {
-                              handleUpdateTransformation(index, {
-                                ...transformation,
-                                params: { ...transformation.params, percentage: e.target.value }
-                              });
-                            }}
-                          />
-                          <span className="ml-1">%</span>
-                        </div>
-                      )}
-                      
-                      <Button variant="ghost" size="icon" onClick={() => handleRemoveTransformation(index)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div key={index} className="border rounded-md p-3 bg-muted/10">
+                      <TransformationEditor
+                        transformation={transformation}
+                        onUpdate={(newTransformation) => handleUpdateTransformation(index, newTransformation)}
+                        onRemove={() => handleRemoveTransformation(index)}
+                      />
                     </div>
                   ))}
                 </div>
@@ -298,4 +211,3 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
 };
 
 export default FieldMappingCard;
-

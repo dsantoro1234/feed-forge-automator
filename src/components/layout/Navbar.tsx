@@ -1,69 +1,68 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { 
   Home, 
-  FileJson, 
-  Settings, 
-  History as HistoryIcon,
-  Database
+  LayoutDashboard, 
+  ShoppingCart, 
+  FileText, 
+  History, 
+  Settings,
+  DollarSign
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 const Navbar = () => {
   const location = useLocation();
-  const isMobile = useIsMobile();
-  
-  const links = [
-    { to: '/', icon: <Home className="h-4 w-4" />, label: 'Dashboard' },
-    { to: '/templates', icon: <FileJson className="h-4 w-4" />, label: 'Templates' },
-    { to: '/products', icon: <Database className="h-4 w-4" />, label: 'Products' },
-    { to: '/history', icon: <HistoryIcon className="h-4 w-4" />, label: 'History' },
-    { to: '/settings', icon: <Settings className="h-4 w-4" />, label: 'Settings' }
-  ];
   
   const isActive = (path: string) => {
     if (path === '/') {
-      return location.pathname === path;
+      return location.pathname === '/';
     }
     return location.pathname.startsWith(path);
   };
   
+  const menuItems = [
+    { path: '/', icon: <Home />, label: 'Home' },
+    { path: '/dashboard', icon: <LayoutDashboard />, label: 'Dashboard' },
+    { path: '/products', icon: <ShoppingCart />, label: 'Products' },
+    { path: '/templates', icon: <FileText />, label: 'Templates' },
+    { path: '/history', icon: <History />, label: 'History' },
+    { path: '/exchange-rates', icon: <DollarSign />, label: 'Exchange Rates' },
+    { path: '/settings', icon: <Settings />, label: 'Settings' },
+  ];
+  
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background">
-      <div className="container flex h-16 items-center">
-        <div className="mr-4 flex gap-2 items-center">
-          <Link to="/" className="flex items-center space-x-2">
-            <img 
-              src="/placeholder.svg" 
-              alt="logo" 
-              className="h-6 w-6" 
-            />
-            <span className="font-bold text-lg">Feed Forge</span>
-          </Link>
-        </div>
-        <nav className="flex items-center space-x-2 md:space-x-4 lg:space-x-6">
-          {links.map(({ to, icon, label }) => (
-            <Button
-              key={to}
-              asChild
-              variant={isActive(to) ? "default" : "ghost"}
-              size={isMobile ? "icon" : "default"}
-              className={cn(
-                isMobile ? "px-0" : "",
-                isActive(to) ? "" : "text-muted-foreground"
-              )}
-            >
-              <Link to={to}>
-                {icon}
-                {!isMobile && <span className="ml-2">{label}</span>}
-              </Link>
-            </Button>
-          ))}
-        </nav>
+    <nav className="fixed left-0 top-0 bottom-0 w-16 md:w-56 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex flex-col py-4 overflow-hidden z-10">
+      <div className="flex justify-center md:justify-start md:pl-4 mb-8">
+        <Link to="/" className="text-xl font-bold text-primary">
+          <span className="hidden md:inline">FeedManager</span>
+          <span className="md:hidden">FM</span>
+        </Link>
       </div>
-    </header>
+      
+      <div className="space-y-2 flex-1">
+        {menuItems.map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={`flex items-center px-4 py-3 text-sm ${
+              isActive(item.path)
+                ? 'bg-primary/10 text-primary border-r-2 border-primary'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900'
+            }`}
+          >
+            <span className="mr-3">{item.icon}</span>
+            <span className="hidden md:block">{item.label}</span>
+          </Link>
+        ))}
+      </div>
+      
+      <div className="mt-auto px-4 pb-4">
+        <div className="hidden md:block text-xs text-gray-500 dark:text-gray-400">
+          Version 1.0.0
+        </div>
+      </div>
+    </nav>
   );
 };
 

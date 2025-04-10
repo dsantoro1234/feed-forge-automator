@@ -1,3 +1,4 @@
+
 export interface ApiConfig {
   endpoint: string;
   apiKey: string;
@@ -23,12 +24,24 @@ export type FieldTransformationType =
   | 'number_format'
   | 'date_format'
   | 'concatenate'
-  | 'add'       // Nuova trasformazione: somma
-  | 'subtract'  // Nuova trasformazione: sottrazione
-  | 'multiply'  // Nuova trasformazione: moltiplicazione
-  | 'divide'    // Nuova trasformazione: divisione
-  | 'add_percentage'    // Nuova trasformazione: aggiunge una percentuale
-  | 'subtract_percentage'; // Nuova trasformazione: sottrae una percentuale
+  | 'add'
+  | 'subtract'
+  | 'multiply'
+  | 'divide'
+  | 'add_percentage'
+  | 'subtract_percentage'
+  | 'truncate'                  // Nuovo: troncamento testo
+  | 'replace'                   // Nuovo: sostituzione testo
+  | 'combine_fields'            // Nuovo: unione campi
+  | 'extract_substring'         // Nuovo: estrazione sottostringhe
+  | 'custom_round'              // Nuovo: arrotondamento personalizzato
+  | 'unit_conversion'           // Nuovo: conversione unità di misura
+  | 'conditional_mapping'       // Nuovo: mappatura condizionale
+  | 'color_normalize'           // Nuovo: normalizzazione colori
+  | 'dynamic_url'               // Nuovo: URL dinamici
+  | 'remove_html'               // Nuovo: pulizia HTML
+  | 'value_mapping'             // Nuovo: mappatura valori
+  | 'currency_conversion';      // Nuovo: conversione valuta
 
 export interface FieldTransformation {
   type: FieldTransformationType;
@@ -89,6 +102,16 @@ export interface ValidationWarning {
   field: string;
   message: string;
   product?: Partial<Product>;
+}
+
+// Nuova interface per i tassi di cambio
+export interface ExchangeRate {
+  id: string;
+  baseCurrency: string;
+  targetCurrency: string;
+  rate: number;
+  lastUpdated: string;
+  source: 'api' | 'manual';
 }
 
 // New Google Shopping specific types
