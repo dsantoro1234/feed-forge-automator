@@ -3,8 +3,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { ThemeProvider } from './components/theme-provider';
-import { Toaster } from './components/ui/sonner';
+import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/ui/sonner';
 
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
@@ -30,11 +30,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="feed-ui-theme">
-        <ProductProvider>
-          <TemplateProvider>
-            <FeedHistoryProvider>
-              <ConfigProvider>
-                <ExchangeRateProvider>
+        {/* Rearranging provider order to fix dependency issues */}
+        <ConfigProvider>
+          <ExchangeRateProvider>
+            <ProductProvider>
+              <TemplateProvider>
+                <FeedHistoryProvider>
                   <Router>
                     <Routes>
                       <Route path="/" element={<Layout />}>
@@ -52,11 +53,11 @@ function App() {
                     </Routes>
                   </Router>
                   <Toaster />
-                </ExchangeRateProvider>
-              </ConfigProvider>
-            </FeedHistoryProvider>
-          </TemplateProvider>
-        </ProductProvider>
+                </FeedHistoryProvider>
+              </TemplateProvider>
+            </ProductProvider>
+          </ExchangeRateProvider>
+        </ConfigProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

@@ -1,556 +1,297 @@
 
-import React, { useState } from 'react';
-import { FieldTransformation, FieldTransformationType } from '@/types';
-import { Label } from '@/components/ui/label';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Transformation } from '@/types';
 import { useExchangeRates } from '@/contexts/ExchangeRateContext';
+import { Badge } from '@/components/ui/badge';
+import { CreditCard, Lock } from 'lucide-react';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface TransformationEditorProps {
-  transformation: FieldTransformation;
-  onUpdate: (transformation: FieldTransformation) => void;
-  onRemove: () => void;
+  transformation: Transformation;
+  onUpdate: (transformation: Transformation) => void;
+  onDelete: () => void;
 }
 
-const TransformationEditor: React.FC<TransformationEditorProps> = ({ 
-  transformation, 
-  onUpdate, 
-  onRemove 
+const TransformationEditor: React.FC<TransformationEditorProps> = ({
+  transformation,
+  onUpdate,
+  onDelete,
 }) => {
   const { rates, isPremium } = useExchangeRates();
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  
-  // Utility function to create a new transformation with updated properties
-  const updateTransformation = (updates: Partial<FieldTransformation>) => {
-    onUpdate({
-      ...transformation,
-      ...updates,
-    });
+  const [type, setType] = useState<string>(transformation.type);
+
+  // Update local type when prop changes
+  useEffect(() => {
+    setType(transformation.type);
+  }, [transformation.type]);
+
+  const handleTypeChange = (value: string) => {
+    setType(value);
+    onUpdate({ ...transformation, type: value as any });
   };
-  
-  // Utility to update params
-  const updateParams = (paramUpdates: Record<string, any>) => {
-    onUpdate({
-      ...transformation,
-      params: {
-        ...(transformation.params || {}),
-        ...paramUpdates
-      }
-    });
-  };
-  
-  // Render different controls based on transformation type
-  const renderTransformationControls = () => {
-    const type = transformation.type;
-    
-    if (type === 'none') {
-      return <p className="text-sm text-muted-foreground">Select a transformation type</p>;
-    }
-    
+
+  const renderTransformationOptions = () => {
     switch (type) {
-      case 'uppercase':
-      case 'lowercase':
-      case 'capitalize':
-      case 'trim':
-      case 'remove_html':
-        // These transformations don't need additional parameters
-        return null;
-        
-      case 'number_format':
-        return (
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label htmlFor="decimals">Decimal Places</Label>
-                <Input
-                  id="decimals"
-                  type="number"
-                  min="0"
-                  max="10"
-                  value={transformation.params?.decimals || 2}
-                  onChange={(e) => updateParams({ decimals: parseInt(e.target.value) })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="decimalSeparator">Decimal Separator</Label>
-                <Input
-                  id="decimalSeparator"
-                  value={transformation.params?.decimalSeparator || '.'}
-                  onChange={(e) => updateParams({ decimalSeparator: e.target.value })}
-                  maxLength={1}
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="thousandsSeparator">Thousands Separator</Label>
-              <Input
-                id="thousandsSeparator"
-                value={transformation.params?.thousandsSeparator || ','}
-                onChange={(e) => updateParams({ thousandsSeparator: e.target.value })}
-                maxLength={1}
-              />
-            </div>
-          </div>
-        );
-        
-      case 'date_format':
-        return (
-          <div>
-            <Label htmlFor="format">Date Format</Label>
-            <Select
-              value={transformation.params?.format || 'yyyy-MM-dd'}
-              onValueChange={(value) => updateParams({ format: value })}
-            >
-              <SelectTrigger id="format">
-                <SelectValue placeholder="Select format" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="yyyy-MM-dd">ISO (yyyy-MM-dd)</SelectItem>
-                <SelectItem value="dd/MM/yyyy">European (dd/MM/yyyy)</SelectItem>
-                <SelectItem value="MM/dd/yyyy">US (MM/dd/yyyy)</SelectItem>
-                <SelectItem value="yyyy-MM-dd HH:mm:ss">Full ISO (yyyy-MM-dd HH:mm:ss)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        );
-        
-      case 'concatenate':
-        return (
-          <div>
-            <Label htmlFor="template">Template</Label>
-            <Input
-              id="template"
-              value={transformation.params?.template || '{value}'}
-              onChange={(e) => updateParams({ template: e.target.value })}
-              placeholder="{value} suffix"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Use {'{value}'} to insert the field value
-            </p>
-          </div>
-        );
-        
-      case 'add':
-      case 'subtract':
-      case 'multiply':
-      case 'divide':
-        return (
-          <div>
-            <Label htmlFor="value">Value</Label>
-            <Input
-              id="value"
-              type="number"
-              step="any"
-              value={transformation.params?.value || 0}
-              onChange={(e) => updateParams({ value: parseFloat(e.target.value) })}
-            />
-          </div>
-        );
-        
-      case 'add_percentage':
-      case 'subtract_percentage':
-        return (
-          <div>
-            <Label htmlFor="percentage">Percentage (%)</Label>
-            <Input
-              id="percentage"
-              type="number"
-              step="any"
-              value={transformation.params?.percentage || 0}
-              onChange={(e) => updateParams({ percentage: parseFloat(e.target.value) })}
-            />
-          </div>
-        );
-        
-      case 'truncate':
-        return (
-          <div className="space-y-2">
-            <div>
-              <Label htmlFor="maxLength">Max Length</Label>
-              <Input
-                id="maxLength"
-                type="number"
-                min="1"
-                value={transformation.params?.maxLength || 100}
-                onChange={(e) => updateParams({ maxLength: parseInt(e.target.value) })}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="ellipsis"
-                checked={transformation.params?.ellipsis || false}
-                onCheckedChange={(checked) => updateParams({ ellipsis: checked })}
-              />
-              <Label htmlFor="ellipsis">Add ellipsis (...) if truncated</Label>
-            </div>
-          </div>
-        );
-        
       case 'replace':
         return (
           <div className="space-y-2">
             <div>
-              <Label htmlFor="search">Search for</Label>
+              <Label htmlFor="find">Find</Label>
               <Input
-                id="search"
-                value={transformation.params?.search || ''}
-                onChange={(e) => updateParams({ search: e.target.value })}
+                id="find"
+                value={transformation.find || ''}
+                onChange={(e) =>
+                  onUpdate({ ...transformation, find: e.target.value })
+                }
+                placeholder="Text to replace"
               />
             </div>
             <div>
               <Label htmlFor="replace">Replace with</Label>
               <Input
                 id="replace"
-                value={transformation.params?.replace || ''}
-                onChange={(e) => updateParams({ replace: e.target.value })}
+                value={transformation.replace || ''}
+                onChange={(e) =>
+                  onUpdate({ ...transformation, replace: e.target.value })
+                }
+                placeholder="Replacement text"
               />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="regex"
-                checked={transformation.params?.regex || false}
-                onCheckedChange={(checked) => updateParams({ regex: checked })}
-              />
-              <Label htmlFor="regex">Use regular expressions</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="caseInsensitive"
-                checked={transformation.params?.caseInsensitive || false}
-                onCheckedChange={(checked) => updateParams({ caseInsensitive: checked })}
-              />
-              <Label htmlFor="caseInsensitive">Case insensitive</Label>
             </div>
           </div>
         );
-        
-      case 'extract_substring':
+
+      case 'append':
+      case 'prepend':
         return (
-          <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor="value">Value to {type}</Label>
+            <Input
+              id="value"
+              value={transformation.value || ''}
+              onChange={(e) =>
+                onUpdate({ ...transformation, value: e.target.value })
+              }
+              placeholder={`Text to ${type}`}
+            />
+          </div>
+        );
+
+      case 'number_format':
+        return (
+          <div>
+            <Label htmlFor="decimals">Decimal places</Label>
+            <Input
+              id="decimals"
+              type="number"
+              min="0"
+              max="10"
+              value={transformation.decimals || 2}
+              onChange={(e) =>
+                onUpdate({
+                  ...transformation,
+                  decimals: parseInt(e.target.value),
+                })
+              }
+            />
+          </div>
+        );
+
+      case 'substring':
+        return (
+          <div className="space-y-2">
             <div>
-              <Label htmlFor="start">Start Index</Label>
+              <Label htmlFor="start">Start index</Label>
               <Input
                 id="start"
                 type="number"
                 min="0"
-                value={transformation.params?.start || 0}
-                onChange={(e) => updateParams({ start: parseInt(e.target.value) })}
+                value={transformation.start || 0}
+                onChange={(e) =>
+                  onUpdate({
+                    ...transformation,
+                    start: parseInt(e.target.value),
+                  })
+                }
               />
             </div>
             <div>
-              <Label htmlFor="end">End Index (optional)</Label>
+              <Label htmlFor="end">End index (optional)</Label>
               <Input
                 id="end"
                 type="number"
                 min="0"
-                value={transformation.params?.end || ''}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  updateParams({ end: val ? parseInt(val) : undefined });
-                }}
+                value={transformation.end !== undefined ? transformation.end : ''}
+                onChange={(e) =>
+                  onUpdate({
+                    ...transformation,
+                    end: e.target.value ? parseInt(e.target.value) : undefined,
+                  })
+                }
               />
             </div>
           </div>
         );
-        
-      case 'custom_round':
-        return (
-          <div className="space-y-2">
-            <div>
-              <Label htmlFor="type">Rounding Type</Label>
-              <Select
-                value={transformation.params?.type || 'nearest'}
-                onValueChange={(value) => updateParams({ type: value })}
-              >
-                <SelectTrigger id="type">
-                  <SelectValue placeholder="Select rounding type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nearest">Round to nearest</SelectItem>
-                  <SelectItem value="ceil">Round up (ceiling)</SelectItem>
-                  <SelectItem value="floor">Round down (floor)</SelectItem>
-                  <SelectItem value="pricePoint">Price point (e.g., .99)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {transformation.params?.type === 'pricePoint' ? (
-              <div>
-                <Label htmlFor="ending">Price Ending</Label>
-                <Input
-                  id="ending"
-                  value={transformation.params?.ending || '.99'}
-                  onChange={(e) => updateParams({ ending: e.target.value })}
-                />
-              </div>
-            ) : (
-              <div>
-                <Label htmlFor="nearest">Nearest Value</Label>
-                <Input
-                  id="nearest"
-                  type="number"
-                  step="any"
-                  value={transformation.params?.nearest || 1}
-                  onChange={(e) => updateParams({ nearest: parseFloat(e.target.value) })}
-                />
-              </div>
-            )}
-          </div>
-        );
-        
-      case 'unit_conversion':
-        return (
-          <div>
-            <Label htmlFor="conversion">Conversion Type</Label>
-            <Select
-              value={transformation.params?.conversion || 'in_to_cm'}
-              onValueChange={(value) => updateParams({ conversion: value })}
-            >
-              <SelectTrigger id="conversion">
-                <SelectValue placeholder="Select conversion" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="in_to_cm">Inches to Centimeters</SelectItem>
-                <SelectItem value="cm_to_in">Centimeters to Inches</SelectItem>
-                <SelectItem value="ft_to_cm">Feet to Centimeters</SelectItem>
-                <SelectItem value="m_to_ft">Meters to Feet</SelectItem>
-                <SelectItem value="lb_to_kg">Pounds to Kilograms</SelectItem>
-                <SelectItem value="kg_to_lb">Kilograms to Pounds</SelectItem>
-                <SelectItem value="oz_to_g">Ounces to Grams</SelectItem>
-                <SelectItem value="g_to_oz">Grams to Ounces</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        );
-        
-      case 'color_normalize':
-        return (
-          <div className="space-y-2">
-            <div>
-              <Label htmlFor="language">Source Language</Label>
-              <Select
-                value={transformation.params?.language || 'it'}
-                onValueChange={(value) => updateParams({ language: value })}
-              >
-                <SelectTrigger id="language">
-                  <SelectValue placeholder="Select language" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="it">Italian</SelectItem>
-                  <SelectItem value="fr">French</SelectItem>
-                  <SelectItem value="de">German</SelectItem>
-                  <SelectItem value="es">Spanish</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="useCustomMap"
-                checked={transformation.params?.useCustomMap || false}
-                onCheckedChange={(checked) => updateParams({ useCustomMap: checked })}
-              />
-              <Label htmlFor="useCustomMap">Use custom color mappings</Label>
-            </div>
-            
-            {transformation.params?.useCustomMap && (
-              <div>
-                <Label>Custom Mappings (not implemented in UI yet)</Label>
-                <p className="text-xs text-muted-foreground">
-                  In a real app, this would allow defining custom color mappings
-                </p>
-              </div>
-            )}
-          </div>
-        );
-        
-      case 'dynamic_url':
-        return (
-          <div className="space-y-2">
-            <div>
-              <Label htmlFor="baseUrl">Base URL</Label>
-              <Input
-                id="baseUrl"
-                value={transformation.params?.baseUrl || ''}
-                onChange={(e) => updateParams({ baseUrl: e.target.value })}
-                placeholder="https://example.com/product"
-              />
-            </div>
-            <div>
-              <Label htmlFor="paramName">Parameter Name</Label>
-              <Input
-                id="paramName"
-                value={transformation.params?.paramName || 'id'}
-                onChange={(e) => updateParams({ paramName: e.target.value })}
-              />
-            </div>
-          </div>
-        );
-        
+
       case 'currency_conversion':
         return (
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label htmlFor="from">From Currency</Label>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <Label htmlFor="fromCurrency">From Currency</Label>
                 <Select
-                  value={transformation.params?.from || 'EUR'}
-                  onValueChange={(value) => updateParams({ from: value })}
+                  value={transformation.fromCurrency || 'USD'}
+                  onValueChange={(value) =>
+                    onUpdate({ ...transformation, fromCurrency: value })
+                  }
                 >
-                  <SelectTrigger id="from">
-                    <SelectValue placeholder="From" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select currency" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="EUR">Euro (EUR)</SelectItem>
-                    <SelectItem value="USD">US Dollar (USD)</SelectItem>
-                    <SelectItem value="GBP">British Pound (GBP)</SelectItem>
-                    <SelectItem value="JPY">Japanese Yen (JPY)</SelectItem>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                    <SelectItem value="GBP">GBP (£)</SelectItem>
+                    <SelectItem value="CAD">CAD ($)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label htmlFor="to">To Currency</Label>
+              <div className="flex-1">
+                <Label htmlFor="toCurrency">To Currency</Label>
                 <Select
-                  value={transformation.params?.to || 'USD'}
-                  onValueChange={(value) => updateParams({ to: value })}
+                  value={transformation.toCurrency || 'EUR'}
+                  onValueChange={(value) =>
+                    onUpdate({ ...transformation, toCurrency: value })
+                  }
                 >
-                  <SelectTrigger id="to">
-                    <SelectValue placeholder="To" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select currency" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="EUR">Euro (EUR)</SelectItem>
-                    <SelectItem value="USD">US Dollar (USD)</SelectItem>
-                    <SelectItem value="GBP">British Pound (GBP)</SelectItem>
-                    <SelectItem value="JPY">Japanese Yen (JPY)</SelectItem>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                    <SelectItem value="GBP">GBP (£)</SelectItem>
+                    <SelectItem value="CAD">CAD ($)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="useOfficial"
-                checked={transformation.params?.useOfficial || false}
-                disabled={!isPremium}
-                onCheckedChange={(checked) => updateParams({ useOfficial: checked })}
-              />
-              <div>
-                <Label htmlFor="useOfficial" className={!isPremium ? "text-muted-foreground" : ""}>
-                  Use official exchange rates {!isPremium && "(Premium feature)"}
-                </Label>
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <Label htmlFor="rate">Conversion Rate</Label>
                 {!isPremium && (
-                  <p className="text-xs text-muted-foreground">
-                    Upgrade to premium to use up-to-date exchange rates
-                  </p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="cursor-help">
+                          <Lock className="h-3 w-3 mr-1" /> Premium
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Automatic rates are a premium feature</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
+              
+              <div className="flex gap-2 items-center">
+                <Input
+                  id="rate"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={transformation.rate || 1}
+                  onChange={(e) =>
+                    onUpdate({
+                      ...transformation,
+                      rate: parseFloat(e.target.value),
+                    })
+                  }
+                />
+                
+                {isPremium && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            const fromCurr = transformation.fromCurrency || 'USD';
+                            const toCurr = transformation.toCurrency || 'EUR';
+                            const rateKey = `${fromCurr}_${toCurr}`;
+                            const currentRate = rates[rateKey] || 1;
+                            
+                            onUpdate({
+                              ...transformation,
+                              rate: currentRate,
+                            });
+                          }}
+                        >
+                          <CreditCard className="h-4 w-4 mr-1" /> Use Current Rate
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Use the latest exchange rate</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </div>
             </div>
-            
-            {!transformation.params?.useOfficial && (
-              <div>
-                <Label htmlFor="manualRate">Manual Exchange Rate</Label>
-                <Input
-                  id="manualRate"
-                  type="number"
-                  step="0.0001"
-                  min="0"
-                  value={transformation.params?.manualRate || 1}
-                  onChange={(e) => updateParams({ manualRate: parseFloat(e.target.value) })}
-                />
-              </div>
-            )}
-            
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="format"
-                checked={transformation.params?.format || false}
-                onCheckedChange={(checked) => updateParams({ format: checked })}
-              />
-              <Label htmlFor="format">Format result</Label>
-            </div>
-            
-            {transformation.params?.format && (
-              <div>
-                <Label htmlFor="decimals">Decimal Places</Label>
-                <Input
-                  id="decimals"
-                  type="number"
-                  min="0"
-                  max="10"
-                  value={transformation.params?.decimals || 2}
-                  onChange={(e) => updateParams({ decimals: parseInt(e.target.value) })}
-                />
-              </div>
-            )}
           </div>
         );
-        
-      case 'combine_fields':
-      case 'conditional_mapping':
-      case 'value_mapping':
-        return (
-          <div>
-            <p className="text-sm text-muted-foreground">
-              This transformation requires more complex configuration and is not fully implemented in the UI.
-              In a complete application, this would include fields for adding mappings or conditions.
-            </p>
-          </div>
-        );
-        
+
       default:
-        return <p className="text-sm text-muted-foreground">No parameters needed</p>;
+        return null;
     }
   };
-  
+
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center">
-        <Label htmlFor="transformation-type">Transformation Type</Label>
-        <Button variant="ghost" size="sm" onClick={onRemove}>
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
+    <div className="border rounded-md p-4 space-y-4 bg-card">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between">
+        <div className="flex-1">
+          <Label htmlFor="transformation-type">Transformation Type</Label>
+          <Select value={type} onValueChange={handleTypeChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="replace">Replace Text</SelectItem>
+              <SelectItem value="append">Append</SelectItem>
+              <SelectItem value="prepend">Prepend</SelectItem>
+              <SelectItem value="lowercase">Convert to Lowercase</SelectItem>
+              <SelectItem value="uppercase">Convert to Uppercase</SelectItem>
+              <SelectItem value="number_format">Format Number</SelectItem>
+              <SelectItem value="substring">Substring</SelectItem>
+              <SelectItem value="currency_conversion">Currency Conversion</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex-shrink-0 self-end">
+          <Button variant="destructive" size="sm" onClick={onDelete}>
+            Remove
+          </Button>
+        </div>
       </div>
-      
-      <Select
-        value={transformation.type}
-        onValueChange={(value) => updateTransformation({ type: value as FieldTransformationType })}
-      >
-        <SelectTrigger id="transformation-type">
-          <SelectValue placeholder="Select transformation" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">None</SelectItem>
-          <SelectItem value="uppercase">Convert to UPPERCASE</SelectItem>
-          <SelectItem value="lowercase">Convert to lowercase</SelectItem>
-          <SelectItem value="capitalize">Capitalize Words</SelectItem>
-          <SelectItem value="trim">Trim Whitespace</SelectItem>
-          <SelectItem value="number_format">Format Number</SelectItem>
-          <SelectItem value="date_format">Format Date</SelectItem>
-          <SelectItem value="concatenate">Concatenate Text</SelectItem>
-          <SelectItem value="add">Add Value</SelectItem>
-          <SelectItem value="subtract">Subtract Value</SelectItem>
-          <SelectItem value="multiply">Multiply by Value</SelectItem>
-          <SelectItem value="divide">Divide by Value</SelectItem>
-          <SelectItem value="add_percentage">Add Percentage</SelectItem>
-          <SelectItem value="subtract_percentage">Subtract Percentage</SelectItem>
-          <SelectItem value="truncate">Truncate Text</SelectItem>
-          <SelectItem value="replace">Find and Replace</SelectItem>
-          <SelectItem value="combine_fields">Combine Multiple Fields</SelectItem>
-          <SelectItem value="extract_substring">Extract Substring</SelectItem>
-          <SelectItem value="custom_round">Custom Rounding</SelectItem>
-          <SelectItem value="unit_conversion">Unit Conversion</SelectItem>
-          <SelectItem value="conditional_mapping">Conditional Mapping</SelectItem>
-          <SelectItem value="color_normalize">Normalize Color Names</SelectItem>
-          <SelectItem value="dynamic_url">Create Dynamic URL</SelectItem>
-          <SelectItem value="remove_html">Remove HTML Tags</SelectItem>
-          <SelectItem value="value_mapping">Value Mapping</SelectItem>
-          <SelectItem value="currency_conversion">Currency Conversion</SelectItem>
-        </SelectContent>
-      </Select>
-      
-      {renderTransformationControls()}
+
+      {renderTransformationOptions()}
     </div>
   );
 };
