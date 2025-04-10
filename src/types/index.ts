@@ -48,6 +48,21 @@ export interface FieldTransformation {
   params?: Record<string, any>;
 }
 
+// Definizione della trasformazione esportata
+export interface Transformation {
+  type: string;
+  find?: string;
+  replace?: string;
+  value?: string;
+  decimals?: number;
+  start?: number;
+  end?: number;
+  fromCurrency?: string;
+  toCurrency?: string;
+  rate?: number;
+  [key: string]: any;
+}
+
 export interface FieldMapping {
   id: string;
   sourceField: string;
@@ -104,14 +119,17 @@ export interface ValidationWarning {
   product?: Partial<Product>;
 }
 
-// Nuova interface per i tassi di cambio
+// Aggiorniamo l'interfaccia ExchangeRate
 export interface ExchangeRate {
   id: string;
-  baseCurrency: string;
-  targetCurrency: string;
+  fromCurrency: string;
+  toCurrency: string;
   rate: number;
-  lastUpdated: string;
-  source: 'api' | 'manual';
+  updatedAt: string;
+  lastUpdated?: string;
+  source?: 'api' | 'manual';
+  baseCurrency?: string;
+  targetCurrency?: string;
 }
 
 // New Google Shopping specific types

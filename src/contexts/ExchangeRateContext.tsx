@@ -23,6 +23,8 @@ export interface ExchangeRateContextType {
   // Add the missing properties needed by TransformationEditor
   rates: Record<string, number>;
   isPremium: boolean;
+  isSubscriptionActive?: boolean;
+  setSubscriptionActive?: (active: boolean) => void;
 }
 
 const ExchangeRateContext = createContext<ExchangeRateContextType | undefined>(undefined);
@@ -33,6 +35,7 @@ export const ExchangeRateProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [error, setError] = useState<string | null>(null);
   // Add the isPremium state (for now defaulting to false)
   const [isPremium, setIsPremium] = useState(false);
+  const [isSubscriptionActive, setSubscriptionActive] = useState(false);
 
   // Create a rates object from the exchange rates for easy lookup
   const rates = exchangeRates.reduce((acc, rate) => {
@@ -100,6 +103,8 @@ export const ExchangeRateProvider: React.FC<{ children: React.ReactNode }> = ({ 
         // Add the missing properties
         rates,
         isPremium,
+        isSubscriptionActive,
+        setSubscriptionActive
       }}
     >
       {children}
