@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { FieldMapping, FieldTransformation, FieldTransformationType } from '@/types';
+import { FieldMapping, FieldTransformation } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,6 @@ import { Switch } from '@/components/ui/switch';
 import { Trash2, ArrowRight, Plus, Edit, Info } from 'lucide-react';
 import { useTemplates } from '@/contexts/TemplateContext';
 import { useProducts } from '@/contexts/ProductContext';
-import { useExchangeRates } from '@/contexts/ExchangeRateContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -52,8 +51,8 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
   };
   
   const handleAddTransformation = () => {
-    // Fix: Explicitly typing 'none' as FieldTransformationType
-    const newTransformations = [...mapping.transformations, { type: 'none' as FieldTransformationType }];
+    // Utilizziamo 'replace' come tipo predefinito invece di 'none'
+    const newTransformations = [...mapping.transformations, { type: 'replace' } as FieldTransformation];
     updateFieldMapping(templateId, mapping.id, { transformations: newTransformations });
   };
   
@@ -196,7 +195,7 @@ const FieldMappingCard: React.FC<FieldMappingCardProps> = ({ templateId, mapping
                       <TransformationEditor
                         transformation={transformation}
                         onUpdate={(newTransformation) => handleUpdateTransformation(index, newTransformation)}
-                        onRemove={() => handleRemoveTransformation(index)}
+                        onDelete={() => handleRemoveTransformation(index)}
                       />
                     </div>
                   ))}

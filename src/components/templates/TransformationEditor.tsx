@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Transformation } from '@/types';
+import { FieldTransformation } from '@/types';
 import { useExchangeRates } from '@/contexts/ExchangeRateContext';
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, Lock } from 'lucide-react';
@@ -22,8 +22,8 @@ import {
 } from '@/components/ui/tooltip';
 
 interface TransformationEditorProps {
-  transformation: Transformation;
-  onUpdate: (transformation: Transformation) => void;
+  transformation: FieldTransformation;
+  onUpdate: (transformation: FieldTransformation) => void;
   onDelete: () => void;
 }
 
