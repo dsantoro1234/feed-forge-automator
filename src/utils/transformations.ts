@@ -1,78 +1,13 @@
 
-import { FieldTransformation, ExchangeRate } from '@/types';
-import { format } from 'date-fns';
+import { FieldTransformation } from '@/types';
 
-// Mock di tassi di cambio per lo sviluppo
-const mockExchangeRates: ExchangeRate[] = [
-  { id: '1', baseCurrency: 'EUR', targetCurrency: 'USD', rate: 1.08, lastUpdated: new Date().toISOString(), source: 'api' },
-  { id: '2', baseCurrency: 'EUR', targetCurrency: 'GBP', rate: 0.85, lastUpdated: new Date().toISOString(), source: 'api' },
-  { id: '3', baseCurrency: 'USD', targetCurrency: 'EUR', rate: 0.93, lastUpdated: new Date().toISOString(), source: 'api' },
-  { id: '4', baseCurrency: 'USD', targetCurrency: 'GBP', rate: 0.79, lastUpdated: new Date().toISOString(), source: 'api' },
-  { id: '5', baseCurrency: 'GBP', targetCurrency: 'EUR', rate: 1.18, lastUpdated: new Date().toISOString(), source: 'api' },
-  { id: '6', baseCurrency: 'GBP', targetCurrency: 'USD', rate: 1.27, lastUpdated: new Date().toISOString(), source: 'api' },
-];
-
-// Mappa standard dei colori per normalizzazione
-const standardColors: Record<string, string> = {
-  'rosso': 'red',
-  'blu': 'blue',
-  'verde': 'green',
-  'giallo': 'yellow',
-  'nero': 'black',
-  'bianco': 'white',
-  'grigio': 'gray',
-  'arancione': 'orange',
-  'viola': 'purple',
-  'rosa': 'pink',
-  'marrone': 'brown',
-  'azzurro': 'lightblue',
-  // Aggiungi altri mapping colori qui
-};
-
-// Mappa per le conversioni di unità di misura
-const unitConversions: Record<string, Record<string, number>> = {
-  'length': {
-    'in_to_cm': 2.54,
-    'ft_to_cm': 30.48,
-    'cm_to_in': 0.3937,
-    'm_to_ft': 3.28084,
-    // Aggiungi altre conversioni
-  },
-  'weight': {
-    'lb_to_kg': 0.45359237,
-    'kg_to_lb': 2.20462,
-    'oz_to_g': 28.3495,
-    'g_to_oz': 0.03527396,
-    // Aggiungi altre conversioni
-  },
-  // Aggiungi altre categorie di conversione
-};
-
-export const getExchangeRate = (baseCurrency: string, targetCurrency: string): number | null => {
-  // In una implementazione reale, qui si accederebbbe al database
-  const rate = mockExchangeRates.find(
-    r => r.baseCurrency === baseCurrency && r.targetCurrency === targetCurrency
-  );
-  
-  return rate ? rate.rate : null;
-};
-
-export const applyTransformations = (value: any, transformations: FieldTransformation[], otherFields?: Record<string, any>): any => {
-  if (!transformations || transformations.length === 0) {
+// Helper function to apply transformations to a single field
+export const applyTransformation = (value: any, transformation: FieldTransformation): any => {
+  if (!transformation || transformation.type === 'none') {
     return value;
   }
 
-  let result = value;
-
-  for (const transformation of transformations) {
-    result = applySingleTransformation(result, transformation, otherFields);
-  }
-
-  return result;
-};
-
-const applySingleTransformation = (value: any, transformation: FieldTransformation, otherFields?: Record<string, any>): any => {
-  if (value === null || value === undefined) {
+  if (value === undefined || value === null) {
     return value;
   }
 
@@ -84,299 +19,399 @@ const applySingleTransformation = (value: any, transformation: FieldTransformati
       return String(value).toLowerCase();
       
     case 'capitalize':
-      return String(value)
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
-        
+      return String(value).replace(/\b\w/g, char => char.toUpperCase());
+      
     case 'trim':
       return String(value).trim();
       
-    case 'number_format':
-      const numberValue = parseFloat(value);
-      if (isNaN(numberValue)) return value;
+    case 'number_format': {
+      if (isNaN(Number(value))) return value;
       
       const decimals = transformation.params?.decimals || 2;
       const decimalSeparator = transformation.params?.decimalSeparator || '.';
       const thousandsSeparator = transformation.params?.thousandsSeparator || ',';
       
-      const parts = numberValue.toFixed(decimals).split('.');
+      const num = Number(value);
+      const parts = num.toFixed(decimals).split('.');
+      
       parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSeparator);
       
       return parts.join(decimalSeparator);
-      
-    case 'date_format':
+    }
+    
+    case 'date_format': {
       try {
-        const dateValue = new Date(value);
+        const date = new Date(value);
         const formatString = transformation.params?.format || 'yyyy-MM-dd';
-        return format(dateValue, formatString);
+        
+        // Simple date formatter - in a real app you'd use a library like date-fns
+        return formatString
+          .replace('yyyy', date.getFullYear().toString())
+          .replace('MM', (date.getMonth() + 1).toString().padStart(2, '0'))
+          .replace('dd', date.getDate().toString().padStart(2, '0'))
+          .replace('HH', date.getHours().toString().padStart(2, '0'))
+          .replace('mm', date.getMinutes().toString().padStart(2, '0'))
+          .replace('ss', date.getSeconds().toString().padStart(2, '0'));
       } catch (error) {
-        console.error('Date formatting error:', error);
         return value;
       }
+    }
+    
+    case 'concatenate': {
+      const templateStr = transformation.params?.template || '{value}';
+      return templateStr.replace('{value}', String(value));
+    }
+    
+    case 'add': {
+      if (isNaN(Number(value))) return value;
+      return Number(value) + Number(transformation.params?.value || 0);
+    }
+    
+    case 'subtract': {
+      if (isNaN(Number(value))) return value;
+      return Number(value) - Number(transformation.params?.value || 0);
+    }
+    
+    case 'multiply': {
+      if (isNaN(Number(value))) return value;
+      return Number(value) * Number(transformation.params?.value || 1);
+    }
+    
+    case 'divide': {
+      if (isNaN(Number(value))) return value;
+      const divisor = Number(transformation.params?.value || 1);
+      if (divisor === 0) return value;
+      return Number(value) / divisor;
+    }
+    
+    case 'add_percentage': {
+      if (isNaN(Number(value))) return value;
+      const percentage = Number(transformation.params?.percentage || 0);
+      return Number(value) * (1 + percentage / 100);
+    }
+    
+    case 'subtract_percentage': {
+      if (isNaN(Number(value))) return value;
+      const percentage = Number(transformation.params?.percentage || 0);
+      return Number(value) * (1 - percentage / 100);
+    }
+    
+    case 'truncate': {
+      const maxLength = Number(transformation.params?.maxLength || 100);
+      const text = String(value);
       
-    case 'concatenate':
-      const template = transformation.params?.template || '';
-      return template.replace(/\{value\}/g, String(value));
-    
-    case 'add':
-      const addValue = parseFloat(value);
-      const addParam = parseFloat(transformation.params?.value || '0');
-      if (isNaN(addValue)) return value;
-      return addValue + addParam;
-    
-    case 'subtract':
-      const subtractValue = parseFloat(value);
-      const subtractParam = parseFloat(transformation.params?.value || '0');
-      if (isNaN(subtractValue)) return value;
-      return subtractValue - subtractParam;
-    
-    case 'multiply':
-      const multiplyValue = parseFloat(value);
-      const multiplyParam = parseFloat(transformation.params?.value || '0');
-      if (isNaN(multiplyValue)) return value;
-      return multiplyValue * multiplyParam;
-    
-    case 'divide':
-      const divideValue = parseFloat(value);
-      const divideParam = parseFloat(transformation.params?.value || '0');
-      if (isNaN(divideValue) || divideParam === 0) return value;
-      return divideValue / divideParam;
-    
-    case 'add_percentage':
-      const addPercentValue = parseFloat(value);
-      const addPercentParam = parseFloat(transformation.params?.percentage || '0');
-      if (isNaN(addPercentValue)) return value;
-      return addPercentValue + (addPercentValue * addPercentParam / 100);
-    
-    case 'subtract_percentage':
-      const subtractPercentValue = parseFloat(value);
-      const subtractPercentParam = parseFloat(transformation.params?.percentage || '0');
-      if (isNaN(subtractPercentValue)) return value;
-      return subtractPercentValue - (subtractPercentValue * subtractPercentParam / 100);
+      if (text.length <= maxLength) {
+        return text;
+      }
       
-    // Nuove trasformazioni
-    case 'truncate':
-      const maxLength = parseInt(transformation.params?.maxLength || '100');
-      const stringValue = String(value);
-      
-      if (stringValue.length <= maxLength) return stringValue;
-      
-      const ellipsis = transformation.params?.ellipsis === true;
-      return ellipsis 
-        ? stringValue.substring(0, maxLength) + '...' 
-        : stringValue.substring(0, maxLength);
+      const truncated = text.substring(0, maxLength);
+      return transformation.params?.ellipsis ? truncated + '...' : truncated;
+    }
     
-    case 'replace':
+    case 'replace': {
       const search = transformation.params?.search || '';
       const replace = transformation.params?.replace || '';
-      const useRegex = transformation.params?.regex === true;
+      const text = String(value);
       
-      if (useRegex && search) {
+      if (transformation.params?.regex) {
         try {
           const flags = transformation.params?.caseInsensitive ? 'gi' : 'g';
           const regex = new RegExp(search, flags);
-          return String(value).replace(regex, replace);
+          return text.replace(regex, replace);
         } catch (error) {
-          console.error('Regex replacement error:', error);
-          return value;
+          return text;
+        }
+      } else {
+        if (transformation.params?.caseInsensitive) {
+          const searchRegex = new RegExp(escapeRegExp(search), 'gi');
+          return text.replace(searchRegex, replace);
+        } else {
+          return text.split(search).join(replace);
         }
       }
+    }
+    
+    case 'combine_fields': {
+      // This would need access to all fields, will be handled differently
+      return value;
+    }
+    
+    case 'extract_substring': {
+      const text = String(value);
+      const start = Number(transformation.params?.start || 0);
+      const end = transformation.params?.end ? Number(transformation.params.end) : undefined;
       
-      return String(value).replace(new RegExp(search, 'g'), replace);
+      return text.substring(start, end);
+    }
+    
+    case 'custom_round': {
+      if (isNaN(Number(value))) return value;
       
-    case 'combine_fields':
-      if (!otherFields) return value;
+      const num = Number(value);
+      const type = transformation.params?.type || 'nearest';
       
-      const fields = transformation.params?.fields || [];
-      const separator = transformation.params?.separator || ' ';
-      const template = transformation.params?.template || '';
-      
-      // Se non ci sono altri campi da combinare, ritorna il valore originale
-      if (fields.length === 0) return value;
-      
-      // Ottieni i valori dei campi specificati
-      const fieldValues: Record<string, any> = { value };
-      for (const field of fields) {
-        fieldValues[field] = otherFields[field] || '';
-      }
-      
-      // Se c'è un template, sostituisci i valori in esso
-      if (template) {
-        let result = template;
-        for (const [key, val] of Object.entries(fieldValues)) {
-          result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), String(val));
-        }
-        return result;
-      }
-      
-      // Altrimenti unisci i valori con il separatore
-      return [String(value), ...fields.map(f => String(otherFields[f] || ''))].join(separator);
-      
-    case 'extract_substring':
-      const start = parseInt(transformation.params?.start || '0');
-      const end = transformation.params?.end 
-        ? parseInt(transformation.params.end)
-        : undefined;
-      return String(value).substring(start, end);
-      
-    case 'custom_round':
-      const roundValue = parseFloat(value);
-      if (isNaN(roundValue)) return value;
-      
-      const roundType = transformation.params?.type || 'nearest';
-      const nearest = parseFloat(transformation.params?.nearest || '1');
-      
-      if (roundType === 'nearest') {
-        return Math.round(roundValue / nearest) * nearest;
-      } else if (roundType === 'ceil') {
-        return Math.ceil(roundValue / nearest) * nearest;
-      } else if (roundType === 'floor') {
-        return Math.floor(roundValue / nearest) * nearest;
-      } else if (roundType === 'pricePoint') {
-        // Arrotondamento a un prezzo con terminazione specifica (es. .99)
-        const base = Math.floor(roundValue);
+      if (type === 'pricePoint') {
         const ending = transformation.params?.ending || '.99';
-        return parseFloat(`${base}${ending}`);
-      }
-      
-      return roundValue;
-      
-    case 'unit_conversion':
-      const unitValue = parseFloat(value);
-      if (isNaN(unitValue)) return value;
-      
-      const conversionType = transformation.params?.type || '';
-      const conversionKey = transformation.params?.conversion || '';
-      
-      if (!unitConversions[conversionType] || !unitConversions[conversionType][conversionKey]) {
-        return value;
-      }
-      
-      const factor = unitConversions[conversionType][conversionKey];
-      return unitValue * factor;
-      
-    case 'conditional_mapping':
-      const conditions = transformation.params?.conditions || [];
-      const defaultResult = transformation.params?.default !== undefined 
-        ? transformation.params.default 
-        : value;
-      
-      // Verifica ogni condizione e applica la trasformazione corrispondente
-      for (const condition of conditions) {
-        const { operator, compareValue, result } = condition;
+        const wholePart = Math.floor(num);
+        return parseFloat(wholePart + ending);
+      } else {
+        const nearest = Number(transformation.params?.nearest || 1);
         
-        switch (operator) {
+        switch (type) {
+          case 'nearest':
+            return Math.round(num / nearest) * nearest;
+          case 'ceil':
+            return Math.ceil(num / nearest) * nearest;
+          case 'floor':
+            return Math.floor(num / nearest) * nearest;
+          default:
+            return num;
+        }
+      }
+    }
+    
+    case 'unit_conversion': {
+      if (isNaN(Number(value))) return value;
+      
+      const num = Number(value);
+      const conversionType = transformation.params?.conversion;
+      
+      switch (conversionType) {
+        // Length conversions
+        case 'in_to_cm': return num * 2.54;
+        case 'cm_to_in': return num / 2.54;
+        case 'ft_to_cm': return num * 30.48;
+        case 'm_to_ft': return num * 3.28084;
+        
+        // Weight conversions
+        case 'lb_to_kg': return num * 0.453592;
+        case 'kg_to_lb': return num * 2.20462;
+        case 'oz_to_g': return num * 28.3495;
+        case 'g_to_oz': return num / 28.3495;
+        
+        default:
+          return num;
+      }
+    }
+    
+    case 'conditional_mapping': {
+      const conditions = transformation.params?.conditions || [];
+      const text = String(value);
+      const num = Number(value);
+      
+      for (const condition of conditions) {
+        let matches = false;
+        
+        switch (condition.operator) {
           case 'equals':
-            if (value == compareValue) return result;
+            matches = value == condition.compareValue;
             break;
           case 'notEquals':
-            if (value != compareValue) return result;
+            matches = value != condition.compareValue;
             break;
           case 'greaterThan':
-            if (parseFloat(value) > parseFloat(compareValue)) return result;
+            matches = !isNaN(num) && num > Number(condition.compareValue);
             break;
           case 'lessThan':
-            if (parseFloat(value) < parseFloat(compareValue)) return result;
+            matches = !isNaN(num) && num < Number(condition.compareValue);
             break;
           case 'contains':
-            if (String(value).includes(String(compareValue))) return result;
+            matches = text.includes(condition.compareValue);
             break;
           case 'startsWith':
-            if (String(value).startsWith(String(compareValue))) return result;
+            matches = text.startsWith(condition.compareValue);
             break;
           case 'endsWith':
-            if (String(value).endsWith(String(compareValue))) return result;
+            matches = text.endsWith(condition.compareValue);
             break;
-          // Aggiungi altri operatori se necessario
+        }
+        
+        if (matches) {
+          return condition.result;
         }
       }
       
-      return defaultResult;
+      return transformation.params?.default !== undefined 
+        ? transformation.params.default 
+        : value;
+    }
+    
+    case 'color_normalize': {
+      // Simplified version - in a real app, you'd have a database of color mappings
+      const colorMap: Record<string, Record<string, string>> = {
+        it: {
+          'rosso': 'red',
+          'verde': 'green',
+          'blu': 'blue',
+          'giallo': 'yellow',
+          'nero': 'black',
+          'bianco': 'white',
+        },
+        fr: {
+          'rouge': 'red',
+          'vert': 'green',
+          'bleu': 'blue',
+          'jaune': 'yellow',
+          'noir': 'black',
+          'blanc': 'white',
+        },
+        de: {
+          'rot': 'red',
+          'grün': 'green',
+          'blau': 'blue',
+          'gelb': 'yellow',
+          'schwarz': 'black',
+          'weiß': 'white',
+        },
+        es: {
+          'rojo': 'red',
+          'verde': 'green',
+          'azul': 'blue',
+          'amarillo': 'yellow',
+          'negro': 'black',
+          'blanco': 'white',
+        }
+      };
       
-    case 'color_normalize':
-      const colorValue = String(value).toLowerCase().trim();
-      const normalizeLanguage = transformation.params?.language || 'it';
+      const text = String(value).toLowerCase();
+      const language = transformation.params?.language || 'it';
       
-      // Usa la mappa standard o una mappa personalizzata
-      const colorMap = transformation.params?.customMap || standardColors;
+      // Use custom mappings if enabled
+      if (transformation.params?.useCustomMap && transformation.params?.customMap) {
+        const customMap = transformation.params.customMap as Record<string, string>;
+        for (const [src, target] of Object.entries(customMap)) {
+          if (text === src.toLowerCase()) {
+            return target;
+          }
+        }
+      }
       
-      return colorMap[colorValue] || value;
-      
-    case 'dynamic_url':
+      // Use default mappings
+      const languageMap = colorMap[language as keyof typeof colorMap] || {};
+      return languageMap[text] || value;
+    }
+    
+    case 'dynamic_url': {
       const baseUrl = transformation.params?.baseUrl || '';
       const paramName = transformation.params?.paramName || 'id';
       const additionalParams = transformation.params?.additionalParams || {};
       
-      // Crea l'URL base
       let url = baseUrl;
       
-      // Aggiungi il parametro principale
-      url += url.includes('?') ? '&' : '?';
+      // Add parameter separator
+      if (url.includes('?')) {
+        url += '&';
+      } else {
+        url += '?';
+      }
+      
+      // Add main parameter
       url += `${paramName}=${encodeURIComponent(value)}`;
       
-      // Aggiungi eventuali parametri aggiuntivi
+      // Add additional parameters
       for (const [key, val] of Object.entries(additionalParams)) {
         url += `&${key}=${encodeURIComponent(String(val))}`;
       }
       
       return url;
-      
-    case 'remove_html':
+    }
+    
+    case 'remove_html': {
       return String(value).replace(/<[^>]*>/g, '');
-      
-    case 'value_mapping':
+    }
+    
+    case 'value_mapping': {
       const mappings = transformation.params?.mappings || {};
-      const caseSensitive = transformation.params?.caseSensitive === true;
+      const text = String(value);
+      const caseSensitive = transformation.params?.caseSensitive || false;
+      const keepOriginal = transformation.params?.keepOriginal !== false;
       
-      const lookupValue = caseSensitive ? String(value) : String(value).toLowerCase();
-      const mappingKeys = Object.keys(mappings);
-      
-      for (const key of mappingKeys) {
-        const compareKey = caseSensitive ? key : key.toLowerCase();
-        if (lookupValue === compareKey) {
-          return mappings[key];
+      if (caseSensitive) {
+        const result = mappings[text];
+        return result !== undefined ? result : (keepOriginal ? value : '');
+      } else {
+        const lowerText = text.toLowerCase();
+        for (const [key, val] of Object.entries(mappings)) {
+          if (key.toLowerCase() === lowerText) {
+            return val;
+          }
         }
+        return keepOriginal ? value : '';
       }
+    }
+    
+    case 'currency_conversion': {
+      if (isNaN(Number(value))) return value;
       
-      // Ritorna il valore originale se non ci sono mapping corrispondenti
-      return transformation.params?.keepOriginal !== false ? value : '';
-      
-    case 'currency_conversion':
-      const currencyValue = parseFloat(value);
-      if (isNaN(currencyValue)) return value;
-      
+      const num = Number(value);
       const from = transformation.params?.from || 'EUR';
       const to = transformation.params?.to || 'USD';
-      const manualRate = parseFloat(transformation.params?.manualRate || '0');
-      const useOfficial = transformation.params?.useOfficial === true;
       
-      let exchangeRate: number | null = null;
+      // In a real app, this would use real exchange rate data
+      let rate = 1.0;
       
-      // Prima prova a usare il tasso manuale se fornito
-      if (!useOfficial && manualRate > 0) {
-        exchangeRate = manualRate;
+      if (transformation.params?.useOfficial) {
+        // Would fetch from some API or database in a real app
+        const mockRates: Record<string, Record<string, number>> = {
+          'EUR': { 'USD': 1.08, 'GBP': 0.86, 'JPY': 160.5 },
+          'USD': { 'EUR': 0.93, 'GBP': 0.79, 'JPY': 149.5 },
+          'GBP': { 'EUR': 1.16, 'USD': 1.26, 'JPY': 187.2 },
+        };
+        
+        rate = (mockRates[from] && mockRates[from][to]) || 1.0;
       } else {
-        // Altrimenti usa i tassi ufficiali (da API/DB)
-        exchangeRate = getExchangeRate(from, to);
+        // Use manual rate
+        rate = Number(transformation.params?.manualRate || 1.0);
       }
       
-      if (!exchangeRate) {
-        console.warn(`Exchange rate not found for ${from} to ${to}`);
-        return value;
+      const converted = num * rate;
+      
+      if (transformation.params?.format) {
+        const decimals = Number(transformation.params?.decimals || 2);
+        return Number(converted.toFixed(decimals));
       }
       
-      const convertedValue = currencyValue * exchangeRate;
-      
-      // Formatta il risultato se richiesto
-      if (transformation.params?.format === true) {
-        const decimals = transformation.params?.decimals || 2;
-        return convertedValue.toFixed(decimals);
-      }
-      
-      return convertedValue;
-      
+      return converted;
+    }
+    
     default:
       return value;
   }
 };
+
+// Utility function to combine multiple fields
+export const combineFields = (
+  mainValue: any, 
+  otherFields: Record<string, any>,
+  transformation: FieldTransformation
+): any => {
+  if (transformation.type !== 'combine_fields') {
+    return mainValue;
+  }
+  
+  const fields = transformation.params?.fields || [];
+  const separator = transformation.params?.separator || ' ';
+  let templateStr = transformation.params?.template || '';
+  
+  if (!templateStr) {
+    // If no template provided, just join fields with separator
+    const values = [mainValue, ...fields.map(field => otherFields[field] || '')];
+    return values.filter(Boolean).join(separator);
+  } else {
+    // Replace value placeholder
+    templateStr = templateStr.replace(/{value}/g, String(mainValue || ''));
+    
+    // Replace field placeholders
+    for (const field of fields) {
+      const pattern = new RegExp(`{${field}}`, 'g');
+      templateStr = templateStr.replace(pattern, String(otherFields[field] || ''));
+    }
+    
+    return templateStr;
+  }
+};
+
+// Helper function to escape special regex characters
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}

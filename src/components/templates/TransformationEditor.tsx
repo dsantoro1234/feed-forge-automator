@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FieldTransformation, FieldTransformationType } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,13 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { 
+  Trash2, 
+  ChevronDown, 
+  ChevronUp, 
+  Plus, 
+  Lock 
+} from 'lucide-react';
 import { 
   Accordion,
   AccordionContent,
@@ -91,7 +96,6 @@ const TransformationEditor: React.FC<TransformationEditorProps> = ({
     return 'Other';
   };
   
-  // Raggruppa le trasformazioni per categoria
   const groupedTransformations: Record<string, FieldTransformationType[]> = {};
   Object.keys(transformationLabels).forEach((key) => {
     const type = key as FieldTransformationType;
@@ -104,7 +108,6 @@ const TransformationEditor: React.FC<TransformationEditorProps> = ({
     groupedTransformations[category].push(type);
   });
   
-  // Ordinamento personalizzato delle categorie
   const categoryOrder = ['Text', 'Number', 'Date', 'Conversion', 'Combining', 'Mapping', 'Other'];
   
   const updateParam = (paramName: string, value: any) => {
@@ -117,7 +120,6 @@ const TransformationEditor: React.FC<TransformationEditorProps> = ({
     });
   };
   
-  // Unità di misura disponibili per la conversione
   const unitConversions = {
     'length': [
       { value: 'in_to_cm', label: 'Inches to Centimeters' },
@@ -752,7 +754,7 @@ const TransformationEditor: React.FC<TransformationEditorProps> = ({
                   <div className="flex items-center gap-2">
                     <span>{key}</span>
                     <span>=</span>
-                    <span>{value}</span>
+                    <span>{String(value)}</span>
                   </div>
                   <Button
                     variant="ghost"
@@ -816,7 +818,7 @@ const TransformationEditor: React.FC<TransformationEditorProps> = ({
                   <div className="flex items-center gap-2">
                     <span>{key}</span>
                     <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                    <span>{value}</span>
+                    <span>{String(value)}</span>
                   </div>
                   <Button
                     variant="ghost"
