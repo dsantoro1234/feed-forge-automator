@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useTemplates } from '@/contexts/TemplateContext';
 import TemplateCard from '@/components/dashboard/TemplateCard';
 import { Link } from 'react-router-dom';
-import { FileText, Plus, Search } from 'lucide-react';
+import { Facebook, FileText, Plus, Search, ShoppingCart, Tag } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -24,6 +24,12 @@ const TemplateList = () => {
     
     return matchesSearch && matchesType;
   });
+
+  const feedTypeIcons = {
+    google: <ShoppingCart className="h-4 w-4 mr-2 text-blue-500" />,
+    meta: <Facebook className="h-4 w-4 mr-2 text-indigo-500" />,
+    trovaprezzi: <Tag className="h-4 w-4 mr-2 text-green-500" />
+  };
   
   return (
     <div className="space-y-6">
@@ -53,9 +59,24 @@ const TemplateList = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="google">Google Shopping</SelectItem>
-            <SelectItem value="meta">Meta / Facebook</SelectItem>
-            <SelectItem value="trovaprezzi">Trovaprezzi</SelectItem>
+            <SelectItem value="google">
+              <div className="flex items-center">
+                {feedTypeIcons.google}
+                Google Shopping
+              </div>
+            </SelectItem>
+            <SelectItem value="meta">
+              <div className="flex items-center">
+                {feedTypeIcons.meta}
+                Meta / Facebook
+              </div>
+            </SelectItem>
+            <SelectItem value="trovaprezzi">
+              <div className="flex items-center">
+                {feedTypeIcons.trovaprezzi}
+                Trovaprezzi
+              </div>
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -75,7 +96,7 @@ const TemplateList = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTemplates.map(template => (
             <TemplateCard key={template.id} template={template} />
           ))}
